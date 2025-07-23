@@ -1,0 +1,23 @@
+
+tests:
+  - name: Get Users
+    method: GET
+    url: https://jsonplaceholder.typicode.com/users
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 200
+
+  - name: Create Post
+    method: POST
+    url: https://jsonplaceholder.typicode.com/posts
+    headers:
+      Content-Type: application/json
+    body: |
+      {
+        "title": "foo",
+        "body": "bar",
+        "userId": 1
+      }
+    expect:
+      status: 201

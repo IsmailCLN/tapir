@@ -1,14 +1,13 @@
-package utils
+package parser
 
 import (
 	"os"
 
-	"github.com/IsmailCLN/tapir/models"
 	"gopkg.in/yaml.v2"
 )
 
-func LoadTestSuite(path string) (models.TestSuite, error) {
-	var suite models.TestSuite
+func LoadTestSuite(path string) (TestSuite, error) {
+	var suite TestSuite
 
 	data, err := os.ReadFile(path)
 	if err != nil {

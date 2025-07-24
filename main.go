@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"github.com/IsmailCLN/tapir/utils"
+
+	"github.com/IsmailCLN/tapir/internal/httpclient"
+	"github.com/IsmailCLN/tapir/internal/parser"
 )
 
 func main() {
@@ -12,13 +14,11 @@ func main() {
 		return
 	}
 
-	suite, err := utils.LoadTestSuite(os.Args[1])
+	suite, err := parser.LoadTestSuite(os.Args[1])
 	if err != nil {
 		fmt.Printf("Error loading test suite: %v\n", err)
 		return
 	}
 
-	for _, test := range suite.Tests {
-		utils.RunTestCase(test)
-	}
+	httpclient.RunAllTests(suite)
 }

@@ -52,6 +52,10 @@ func formatSize(bytes int64) string {
 }
 
 func RenderResults() {
+	// Terminal ekranını temizle
+	fmt.Print("\033[H\033[2J")
+
+	// Sonuçları yazdır.
 	p := tea.NewProgram(ResultView{results: testResults})
 	_, err := p.Run()
 	if err != nil {

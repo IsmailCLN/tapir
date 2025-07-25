@@ -1,4 +1,3 @@
-
 tests:
   - name: Get Users
     method: GET
@@ -7,6 +6,22 @@ tests:
       Content-Type: application/json
     expect:
       status: 200
+
+  - name: Get Single User
+    method: GET
+    url: https://jsonplaceholder.typicode.com/users/1
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 200
+
+  - name: Get Non-existent User
+    method: GET
+    url: https://jsonplaceholder.typicode.com/users/9999
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 404
 
   - name: Create Post
     method: POST
@@ -21,3 +36,64 @@ tests:
       }
     expect:
       status: 201
+
+  - name: Create Empty Post
+    method: POST
+    url: https://jsonplaceholder.typicode.com/posts
+    headers:
+      Content-Type: application/json
+    body: |
+      {}
+    expect:
+      status: 201
+
+  - name: Update Post
+    method: PUT
+    url: https://jsonplaceholder.typicode.com/posts/1
+    headers:
+      Content-Type: application/json
+    body: |
+      {
+        "id": 1,
+        "title": "updated",
+        "body": "updated body",
+        "userId": 1
+      }
+    expect:
+      status: 200
+
+  - name: Patch Post
+    method: PATCH
+    url: https://jsonplaceholder.typicode.com/posts/1
+    headers:
+      Content-Type: application/json
+    body: |
+      {
+        "title": "patched title"
+      }
+    expect:
+      status: 200
+
+  - name: Delete Post
+    method: DELETE
+    url: https://jsonplaceholder.typicode.com/posts/1
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 200
+
+  - name: Get Comments for Post
+    method: GET
+    url: https://jsonplaceholder.typicode.com/posts/1/comments
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 200
+
+  - name: Get Invalid Endpoint
+    method: GET
+    url: https://jsonplaceholder.typicode.com/invalid
+    headers:
+      Content-Type: application/json
+    expect:
+      status: 404

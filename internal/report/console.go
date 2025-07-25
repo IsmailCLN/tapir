@@ -3,127 +3,190 @@ package report
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/IsmailCLN/tapir/internal/assert"
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
-
-// Bu struct dışarıdan erişilebilsin diye büyük harfle
 type TestResult struct {
-	Name   string
-	Result assert.AssertionResult
+	Name           string
+	Result         assert.AssertionResult
+	Duration       string
+	ResponseSize   string
+	ExpectedStatus int
+	ActualStatus   int
 }
 
-// geçici olarak sonuçları burada biriktiriyoruz
 var testResults []TestResult
 
-// Anlık olarak test sonucu ekler
-func PrintResult(testName string, result assert.AssertionResult) {
-	testResults = append(testResults, TestResult{Name: testName, Result: result})
+func PrintResult(testName string, result assert.AssertionResult, durationMs int64, sizeBytes int64, expected, actual int) {
+	testResults = append(testResults, TestResult{
+		Name:           testName,
+		Result:         result,
+		Duration:       formatDuration(durationMs),
+		ResponseSize:   formatSize(sizeBytes),
+		ExpectedStatus: expected,
+		ActualStatus:   actual,
+	})
 }
 
-// Tüm sonuçları kullanıcıya göster
+func formatDuration(ms int64) string {
+	if ms < 1000 {
+		return fmt.Sprintf("%d ms", ms)
+	}
+	return fmt.Sprintf("%.2f s", float64(ms)/1000.0)
+}
+
+func formatSize(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	return fmt.Sprintf("%.2f KB", float64(bytes)/1024.0)
+}
+
 func RenderResults() {
-	p := tea.NewProgram(model{results: testResults})
-	if err := p.Start(); err != nil {
+	p := tea.NewProgram(ResultView{results: testResults})
+	_, err := p.Run()
+	if err != nil {
 		fmt.Printf("Failed to render results: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-type model struct {
+type ResultView struct {
 	results  []TestResult
 	quitting bool
-	message  string // Alt mesaj göstermek için
+	message  string
 }
 
-func (m model) Init() tea.Cmd {
+func (rv ResultView) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rv ResultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			m.quitting = true
-			return m, tea.Quit
+			rv.quitting = true
+			return rv, tea.Quit
 		case "p":
-			err := os.WriteFile("tapir_output.txt", []byte(m.getRawOutput()), 0644)
+			err := os.WriteFile("tapir_output.txt", []byte(rv.getRawOutput()), 0644)
 			if err != nil {
-				m.message = red("Failed to write to file: " + err.Error())
+				rv.message = red("Failed to write to file: " + err.Error())
 			} else {
-				m.message = green("Results written to tapir_output.txt")
+				rv.message = green("Results written to tapir_output.txt")
 			}
-			return m, nil
+			return rv, nil
 		case "c":
-			err := clipboard.WriteAll(m.getRawOutput())
+			err := clipboard.WriteAll(rv.getRawOutput())
 			if err != nil {
-				m.message = red("Failed to copy to clipboard: " + err.Error())
+				rv.message = red("Failed to copy to clipboard: " + err.Error())
 			} else {
-				m.message = green("Results copied to clipboard")
+				rv.message = green("Results copied to clipboard")
 			}
-			return m, nil
+			return rv, nil
 		}
 	}
-	return m, nil
+	return rv, nil
 }
 
-
-func (m model) View() string {
-	if m.quitting {
+func (rv ResultView) View() string {
+	if rv.quitting {
 		return "Bye!\n"
 	}
 
 	var passed, failed int
-	var output strings.Builder
 
-	output.WriteString(lipgloss.NewStyle().Margin(1, 2).Render("🧪 Tapir Test Results:") + "\n\n")
+	// Table styling
+	purple := lipgloss.Color("99")
 
-	for _, r := range m.results {
+	headerStyle := lipgloss.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
+	statusCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(3)
+	nameCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(30)
+	durationAndSizeCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(10).Align(lipgloss.Right)
+	numCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(8).Align(lipgloss.Right)
+
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(purple)).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == table.HeaderRow:
+				return headerStyle
+			case col == 0:
+				return statusCellStyle
+			case col == 1:
+				return nameCellStyle
+			case col == 2:
+				return durationAndSizeCellStyle
+			case col == 3:
+				return durationAndSizeCellStyle
+			case col == 4:
+				return numCellStyle
+			case col == 5:
+				return numCellStyle
+			default:
+				return nameCellStyle
+			}
+		}).
+		Headers("✓", "Test Name", "Duration", "Size", "Expected", "Actual")
+
+	for _, r := range rv.results {
+		icon := "✓"
 		if r.Result.Pass {
 			passed++
-			output.WriteString(green(fmt.Sprintf("✓ %s", r.Name)) + "\n")
+			icon = green(icon)
 		} else {
 			failed++
-			output.WriteString(red(fmt.Sprintf("✗ %s: %s", r.Name, r.Result.Description)) + "\n")
+			icon = red("✗")
 		}
+
+		row := []string{
+			icon,
+			r.Name,
+			r.Duration,
+			r.ResponseSize,
+			strconv.Itoa(r.ExpectedStatus),
+			strconv.Itoa(r.ActualStatus),
+		}
+
+		if !r.Result.Pass && r.Result.Description != "" {
+			row[1] = row[1] + " — " + r.Result.Description
+		}
+
+		t.Row(row...)
 	}
 
-	output.WriteString("\n")
-	output.WriteString(bold(fmt.Sprintf("Summary: ✅ %d passed, ❌ %d failed", passed, failed)) + "\n")
-	output.WriteString("Press 'q' to quit, 'p' to print to file, 'c' to copy to clipboard.\n")
+	summary := bold(fmt.Sprintf("\nSummary: ✅ %d passed, ❌ %d failed", passed, failed))
+	footer := "\nPress 'q' to quit, 'p' to print to file, 'c' to copy to clipboard."
 
-	if m.message != "" {
-		output.WriteString("\n" + m.message + "\n")
-	}
-
-	return output.String()
+	return lipgloss.NewStyle().Margin(1, 2).Render("🧪 Tapir Test Results:\n\n" + t.String() + summary + footer + "\n\n" + rv.message)
 }
 
-func (m model) getRawOutput() string {
+func (rv ResultView) getRawOutput() string {
 	var sb strings.Builder
 	sb.WriteString("🧪 Tapir Test Results:\n\n")
 
 	var passed, failed int
-	for _, r := range m.results {
+	for _, r := range rv.results {
 		if r.Result.Pass {
 			passed++
-			sb.WriteString(fmt.Sprintf("✓ %s\n", r.Name))
+			sb.WriteString(fmt.Sprintf("✓ %s (%s)\n", r.Name, r.Duration))
 		} else {
 			failed++
-			sb.WriteString(fmt.Sprintf("✗ %s: %s\n", r.Name, r.Result.Description))
+			sb.WriteString(fmt.Sprintf("✗ %s: %s (%s)\n", r.Name, r.Result.Description, r.Duration))
 		}
 	}
 
 	sb.WriteString(fmt.Sprintf("\nSummary: %d passed, %d failed\n", passed, failed))
 	return sb.String()
 }
-
 
 // Stil tanımları
 var green = lipgloss.NewStyle().Foreground(lipgloss.Color("#22c55e")).Render

@@ -1,24 +1,11 @@
+/*
+Copyright © 2025 github.com/IsmailCLN
+*/
+
 package main
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/IsmailCLN/tapir/internal/httpclient"
-	"github.com/IsmailCLN/tapir/internal/parser"
-)
+import "github.com/IsmailCLN/tapir/cmd"
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: tapir <path-to-yaml>")
-		return
-	}
-
-	suite, err := parser.LoadTestSuite(os.Args[1])
-	if err != nil {
-		fmt.Printf("Error loading test suite: %v\n", err)
-		return
-	}
-
-	httpclient.RunAllTests(suite)
+	cmd.Execute()
 }

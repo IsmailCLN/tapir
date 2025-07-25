@@ -30,7 +30,7 @@ func RunAllTests(suite parser.TestSuite) {
 
 		req, err := http.NewRequest(tc.Method, tc.URL, body)
 		if err != nil {
-			report.PrintResult(tc.Name, assert.AssertionResult{
+			report.PrintResult(tc.Name, "request", assert.AssertionResult{
 				Pass:        false,
 				Description: "request creation error: " + err.Error(),
 				Expected:    "valid request",
@@ -48,7 +48,7 @@ func RunAllTests(suite parser.TestSuite) {
 		duration := time.Since(start).Milliseconds()
 
 		if err != nil {
-			report.PrintResult(tc.Name, assert.AssertionResult{
+			report.PrintResult(tc.Name, "http", assert.AssertionResult{
 				Pass:        false,
 				Description: "HTTP error: " + err.Error(),
 				Expected:    "success",
@@ -58,19 +58,20 @@ func RunAllTests(suite parser.TestSuite) {
 		}
 		defer resp.Body.Close()
 
-		// Body uzunluğunu hesapla ama içeriği işlemiyoruz (Discard)
-		size, _ := io.Copy(io.Discard, resp.Body)
+		// Body içeriğini oku ve uzunluğu hesapla
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyStr := string(bodyBytes)
+		size := int64(len(bodyBytes))
 
-		result := assert.AssertStatus(tc.Expect.Status, resp.StatusCode)
+		// Status karşılaştırması
+		statusResult := assert.AssertStatus(tc.Expect.Status, resp.StatusCode)
+		report.PrintResult(tc.Name, "status", statusResult, duration, size, tc.Expect.Status, resp.StatusCode)
 
-		report.PrintResult(
-			tc.Name,
-			result,
-			duration,
-			size,
-			tc.Expect.Status,
-			resp.StatusCode,
-		)
+		// Body karşılaştırması isteniyorsa
+		if tc.Expect.Body != "" {
+			bodyResult := assert.AssertBody(tc.Expect.Body, bodyStr)
+			report.PrintResult(tc.Name, "body", bodyResult, duration, size, 0, 0)
+		}
 	}
 
 	report.RenderResults()

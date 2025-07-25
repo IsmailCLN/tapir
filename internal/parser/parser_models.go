@@ -10,7 +10,8 @@ type TestCase struct {
 }
 
 type Expectation struct {
-	Status int `yaml:"status"`
+	Status int    `yaml:"status"`
+	Body   string `yaml:"body,omitempty"`
 }
 
 type TestSuite struct {

@@ -15,6 +15,7 @@ import (
 
 type TestResult struct {
 	Name           string
+	Category       string
 	Result         assert.AssertionResult
 	Duration       string
 	ResponseSize   string
@@ -24,9 +25,10 @@ type TestResult struct {
 
 var testResults []TestResult
 
-func PrintResult(testName string, result assert.AssertionResult, durationMs int64, sizeBytes int64, expected, actual int) {
+func PrintResult(testName string, category string, result assert.AssertionResult, durationMs int64, sizeBytes int64, expected, actual int) {
 	testResults = append(testResults, TestResult{
 		Name:           testName,
+		Category:       category,
 		Result:         result,
 		Duration:       formatDuration(durationMs),
 		ResponseSize:   formatSize(sizeBytes),
@@ -51,12 +53,11 @@ func formatSize(bytes int64) string {
 
 func RenderResults() {
 	p := tea.NewProgram(ResultView{results: testResults})
-	model, err := p.Run()
+	_, err := p.Run()
 	if err != nil {
 		fmt.Printf("Failed to render results: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Final state:", model)
 }
 
 type ResultView struct {
@@ -108,8 +109,9 @@ func (rv ResultView) View() string {
 	purple := lipgloss.Color("99")
 
 	headerStyle := lipgloss.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
-	statusCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(3)
-	nameCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(30)
+	tinyCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(3)
+	mediumCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(15).Align(lipgloss.Center)
+	largeCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(30)
 	durationAndSizeCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(10).Align(lipgloss.Right)
 	numCellStyle := lipgloss.NewStyle().Padding(0, 1).Width(8).Align(lipgloss.Right)
 
@@ -121,22 +123,24 @@ func (rv ResultView) View() string {
 			case row == table.HeaderRow:
 				return headerStyle
 			case col == 0:
-				return statusCellStyle
+				return tinyCellStyle
 			case col == 1:
-				return nameCellStyle
+				return largeCellStyle
 			case col == 2:
-				return durationAndSizeCellStyle
+				return mediumCellStyle
 			case col == 3:
 				return durationAndSizeCellStyle
 			case col == 4:
-				return numCellStyle
+				return durationAndSizeCellStyle
 			case col == 5:
 				return numCellStyle
+			case col == 6:
+				return numCellStyle
 			default:
-				return nameCellStyle
+				return largeCellStyle
 			}
 		}).
-		Headers("✓", "Test Name", "Duration", "Size", "Expected", "Actual")
+		Headers("✓", "Test Name", "Check", "Duration", "Size", "Expected", "Actual")
 
 	for _, r := range rv.results {
 		icon := "✓"
@@ -151,12 +155,12 @@ func (rv ResultView) View() string {
 		row := []string{
 			icon,
 			r.Name,
+			r.Category,
 			r.Duration,
 			r.ResponseSize,
 			strconv.Itoa(r.ExpectedStatus),
 			strconv.Itoa(r.ActualStatus),
 		}
-
 		if !r.Result.Pass && r.Result.Description != "" {
 			row[1] = row[1] + " — " + r.Result.Description
 		}

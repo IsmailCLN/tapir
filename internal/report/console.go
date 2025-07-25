@@ -51,11 +51,12 @@ func formatSize(bytes int64) string {
 
 func RenderResults() {
 	p := tea.NewProgram(ResultView{results: testResults})
-	_, err := p.Run()
+	model, err := p.Run()
 	if err != nil {
 		fmt.Printf("Failed to render results: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Println("Final state:", model)
 }
 
 type ResultView struct {

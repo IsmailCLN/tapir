@@ -10,8 +10,9 @@ type TestCase struct {
 }
 
 type Expectation struct {
-	Status int    `yaml:"status"`
-	Body   string `yaml:"body,omitempty"`
+	Status  int               `yaml:"status"`
+	Body    string            `yaml:"body,omitempty"`
+	Extract map[string]string `yaml:"extract,omitempty"` // <key>: <jsonpath>
 }
 
 type TestSuite struct {

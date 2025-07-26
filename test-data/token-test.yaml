@@ -1,0 +1,18 @@
+tests:
+  - name: Login
+    method: POST
+    url: https://example.com/login
+    body: |
+      { "username": "user", "password": "pass" }
+    expect:
+      status: 200
+      extract:
+        token: $.token
+
+  - name: Get Profile
+    method: GET
+    url: https://example.com/profile
+    headers:
+      Authorization: "Bearer ${token}"
+    expect:
+      status: 200

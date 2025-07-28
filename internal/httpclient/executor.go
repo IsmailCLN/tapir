@@ -35,6 +35,7 @@ func RunAllTests(suite parser.TestSuite) {
 	// CLI’dan gelen timeout’u uygula
 	sharedClient.Timeout = config.HTTPTimeout
 
+abortedLoop:
 	for _, tc := range suite.Tests {
 		var body io.Reader
 		if tc.Body != "" {
@@ -49,6 +50,10 @@ func RunAllTests(suite parser.TestSuite) {
 				Expected:    "valid request",
 				Actual:      err.Error(),
 			}, 0, 0, 0, 0)
+
+			if config.FailFast {
+				break abortedLoop
+			}
 			continue
 		}
 
@@ -73,6 +78,10 @@ func RunAllTests(suite parser.TestSuite) {
 				Expected:    "success",
 				Actual:      err.Error(),
 			}, duration, 0, tc.Expect.Status, 0)
+
+			if config.FailFast {
+				break abortedLoop
+			}
 			continue
 		}
 		defer resp.Body.Close()
@@ -84,11 +93,17 @@ func RunAllTests(suite parser.TestSuite) {
 		// Status kontrolü
 		statusResult := assert.AssertStatus(tc.Expect.Status, resp.StatusCode)
 		report.PrintResult(tc.Name, "status", statusResult, duration, size, tc.Expect.Status, resp.StatusCode)
+		if !statusResult.Pass && config.FailFast {
+			break abortedLoop
+		}
 
 		// Body kontrolü (varsa)
 		if tc.Expect.Body != "" {
 			bodyResult := assert.AssertBody(tc.Expect.Body, bodyStr)
 			report.PrintResult(tc.Name, "body", bodyResult, duration, size, 0, 0)
+			if !bodyResult.Pass && config.FailFast {
+				break abortedLoop
+			}
 		}
 	}
 

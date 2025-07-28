@@ -13,6 +13,7 @@ import (
 
 var (
 	timeoutValue time.Duration
+	failFast     bool
 )
 
 var runCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var runCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		config.HTTPTimeout = timeoutValue
+		config.FailFast = failFast
 
 		suitePath := args[0]
 		suite, err := parser.LoadTestSuite(suitePath)
@@ -36,4 +38,5 @@ var runCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().DurationVar(&timeoutValue, "timeout", 10*time.Second, "HTTP request timeout (e.g. 5s, 1500ms, 1m)")
+	runCmd.Flags().BoolVar(&failFast, "fail-fast", false, "Stop executing further tests after the first failure")
 }

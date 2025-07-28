@@ -13,7 +13,7 @@ tests:
     headers:
       Content-Type: application/json
     expect:
-      status: 200
+      status: 20
       body: | 
         {
           "id": 1,

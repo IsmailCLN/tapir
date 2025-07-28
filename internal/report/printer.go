@@ -37,8 +37,8 @@ func (rv ResultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rv.quitting = true
 			return rv, tea.Quit
 		case "p":
-			err := os.WriteFile("tapir_output.txt", []byte(rv.getRawOutput()), 0644)
-			rv.message = checkIOErr("Results written to tapir_output.txt", err)
+			err := os.WriteFile("tapir_output.md", []byte(rv.getMarkdownOutput()), 0644)
+			rv.message = checkIOErr("Markdown saved to tapir_output.md", err)
 		case "c":
 			err := clipboard.WriteAll(rv.getRawOutput())
 			rv.message = checkIOErr("Results copied to clipboard", err)
@@ -120,10 +120,10 @@ func (rv ResultView) getRawOutput() string {
 	for _, r := range rv.results {
 		if r.Result.Pass {
 			passed++
-			sb.WriteString(fmt.Sprintf("✓ %s (%s)\n", r.Name, r.Duration))
+			sb.WriteString(fmt.Sprintf("✓ %s: %s (%s)\n", r.Name, r.Category, r.Duration))
 		} else {
 			failed++
-			sb.WriteString(fmt.Sprintf("✗ %s: %s (%s)\n", r.Name, r.Result.Description, r.Duration))
+			sb.WriteString(fmt.Sprintf("✗ %s: %s | %s (%s)\n", r.Name, r.Category, r.Result.Description, r.Duration))
 		}
 	}
 	sb.WriteString(fmt.Sprintf("\nSummary: %d passed, %d failed\n", passed, failed))
@@ -135,4 +135,35 @@ func checkIOErr(successMsg string, err error) string {
 		return red("Error: " + err.Error())
 	}
 	return green(successMsg)
+}
+
+func (rv ResultView) getMarkdownOutput() string {
+	var sb strings.Builder
+	var passed, failed int
+
+	sb.WriteString("# 🧪 Tapir Test Results\n\n")
+	sb.WriteString("| ✓ | Test Name | Check | Duration | Size | Expected | Actual |\n")
+	sb.WriteString("|---|-----------|-------|----------|------|----------|--------|\n")
+
+	for _, r := range rv.results {
+		icon := "✓"
+		if r.Result.Pass {
+			passed++
+		} else {
+			icon = "✗"
+			failed++
+		}
+
+		name := r.Name
+		if !r.Result.Pass && r.Result.Description != "" {
+			name += " — " + r.Result.Description
+		}
+
+		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %d | %d |\n",
+			icon, name, r.Category, r.Duration, r.ResponseSize, r.ExpectedStatus, r.ActualStatus))
+	}
+
+	sb.WriteString(fmt.Sprintf("\n**Summary:** ✅ %d passed, ❌ %d failed\n", passed, failed))
+
+	return sb.String()
 }

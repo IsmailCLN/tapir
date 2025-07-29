@@ -8,7 +8,7 @@ tests:
       status: 200
 
   - name: Get Single User
-    method: POST
+    method: GET
     url: https://jsonplaceholder.typicode.com/users/1
     headers:
       Content-Type: application/json

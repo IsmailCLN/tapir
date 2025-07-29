@@ -100,31 +100,38 @@ Global flags:
 ## YAML Suite Format
 
 ```yaml
-suite: User API Smoke Test
-baseURL: https://api.example.com
-
-steps:
-  - name: Login
-    request:
-      method: POST
-      path: /login
-      body:
-        username: alice
-        password: "secret"
-    response:
-      status: 200
-      json:
-        sessionId: string
-
-  - name: List users
-    request:
-      method: GET
-      path: /users
-    response:
-      status: 200
-      json:
-        - id: number
-          username: string
+tests:
+  - name: Get Single User
+    method: GET
+    url: https://jsonplaceholder.typicode.com/users/1
+    headers:
+        Content-Type: application/json
+    expect:
+        status: 200
+        body: | 
+            {
+                "id": 1,
+                "name": "Leanne Graham",
+                "username": "Bret",
+                "email": "Sincere@april.biz",
+                "address": {
+                    "street": "Kulas Light",
+                    "suite": "Apt. 556",
+                    "city": "Gwenborough",
+                    "zipcode": "92998-3874",
+                    "geo": {
+                        "lat": "-37.3159",
+                        "lng": "81.1496"
+                    }
+                },
+                "phone": "1-770-736-8031 x56442",
+                "website": "hildegard.org",
+                "company": {
+                    "name": "Romaguera-Crona",
+                    "catchPhrase": "Multi-layered client-server neural-net",
+                    "bs": "harness real-time e-markets"
+                }
+            }
 ```
 
 See **`test-data/test.yaml`** for a complete example.

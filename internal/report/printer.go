@@ -45,12 +45,16 @@ func (rv ResultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			rv.quitting = true
 			return rv, tea.Quit
+
 		case "p":
-			err := os.WriteFile("tapir_output.md", []byte(rv.getMarkdownOutput()), 0644)
-			rv.message = checkIOErr("Markdown saved to tapir_output.md", err)
+			filename := "tapir-report-" + time.Now().Format("20060102") + ".md"
+			err := os.WriteFile(filename, []byte(rv.getMarkdownOutput()), 0644)
+			rv.message = checkIOErr("Markdown saved to "+filename, err)
+
 		case "c":
 			err := clipboard.WriteAll(rv.getRawOutput())
 			rv.message = checkIOErr("Results copied to clipboard", err)
+
 		case "r":
 			if time.Since(rv.lastReload) < minReloadInterval {
 				rv.message = "Refresh requests too frequent."

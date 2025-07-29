@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/IsmailCLN/tapir/internal/adapter/http"
+	"github.com/IsmailCLN/tapir/internal/adapter/yaml"
 	"github.com/IsmailCLN/tapir/internal/config"
-	"github.com/IsmailCLN/tapir/internal/httpclient"
-	"github.com/IsmailCLN/tapir/internal/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -25,13 +25,13 @@ var runCmd = &cobra.Command{
 		config.FailFast = failFast
 
 		suitePath := args[0]
-		suite, err := parser.LoadTestSuite(suitePath)
+		suite, err := yaml.LoadTestSuite(suitePath)
 		if err != nil {
 			fmt.Printf("Error loading test suite: %v\n", err)
 			os.Exit(1)
 		}
 
-		httpclient.RunAllTests(suite)
+		http.RunAllTests(suite)
 	},
 }
 

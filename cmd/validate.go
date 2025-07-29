@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/IsmailCLN/tapir/internal/parser"
+	"github.com/IsmailCLN/tapir/internal/adapter/yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ var validateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
 
-		suite, err := parser.LoadTestSuite(path)
+		suite, err := yaml.LoadTestSuite(path)
 		if err != nil {
 			fmt.Printf("❌ Failed to parse file: %v\n", err)
 			os.Exit(1)

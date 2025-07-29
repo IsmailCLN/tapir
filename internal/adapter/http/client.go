@@ -1,4 +1,4 @@
-package httpclient
+package http
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/IsmailCLN/tapir/internal/assert"
 	"github.com/IsmailCLN/tapir/internal/config"
-	"github.com/IsmailCLN/tapir/internal/parser"
+	"github.com/IsmailCLN/tapir/internal/domain"
 	"github.com/IsmailCLN/tapir/internal/report"
 )
 
@@ -31,7 +31,7 @@ var sharedClient = &http.Client{
 	Timeout:   10 * time.Second,
 }
 
-func executeSuite(suite parser.TestSuite) {
+func executeSuite(suite domain.TestSuite) {
 	// CLI’dan gelen timeout’u uygula
 	sharedClient.Timeout = config.HTTPTimeout
 
@@ -108,14 +108,14 @@ abortedLoop:
 	}
 }
 
-func RunAllTests(suite parser.TestSuite) {
+func RunAllTests(suite domain.TestSuite) {
 	// 1) Run Test
 	executeSuite(suite)
 
 	// 2) reload
 	reload := func() {
-		report.ClearResults() // önceki sonuçları sil
-		executeSuite(suite)   // aynı testleri tekrar çalıştır
+		report.ClearResults()
+		executeSuite(suite)
 	}
 
 	// 3) Bubble Tea ekranını aç – reload’u geçir

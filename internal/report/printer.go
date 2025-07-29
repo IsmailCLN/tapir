@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,8 +13,12 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 )
 
-func RenderResults() {
-	p := tea.NewProgram(ResultView{results: testResults})
+func RenderResults(reloadFn func()) {
+	p := tea.NewProgram(ResultView{
+		results:    testResults,
+		reload:     reloadFn,
+		lastReload: time.Now(),
+	})
 	_, err := p.Run()
 	if err != nil {
 		fmt.Printf("Failed to render results: %v\n", err)
@@ -21,10 +26,14 @@ func RenderResults() {
 	}
 }
 
+const minReloadInterval = 3 * time.Second
+
 type ResultView struct {
-	results  []TestResult
-	quitting bool
-	message  string
+	results    []TestResult
+	reload     func()
+	lastReload time.Time
+	quitting   bool
+	message    string
 }
 
 func (rv ResultView) Init() tea.Cmd { return nil }
@@ -42,6 +51,18 @@ func (rv ResultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 			err := clipboard.WriteAll(rv.getRawOutput())
 			rv.message = checkIOErr("Results copied to clipboard", err)
+		case "r":
+			if time.Since(rv.lastReload) < minReloadInterval {
+				rv.message = "Refresh requests too frequent."
+				return rv, nil
+			}
+
+			if rv.reload != nil {
+				rv.reload()
+				rv.results = testResults
+				rv.lastReload = time.Now()
+				rv.message = "Results refreshed ✔"
+			}
 		}
 	}
 	return rv, nil
@@ -108,7 +129,7 @@ func (rv ResultView) View() string {
 	return lipgloss.NewStyle().Margin(1, 2).Render(
 		"🧪 Tapir Test Results:\n\n" + t.String() +
 			bold(fmt.Sprintf("\nSummary: ✅ %d passed, ❌ %d failed", passed, failed)) +
-			"\nPress 'q' to quit, 'p' to print to file, 'c' to copy to clipboard.\n\n" +
+			"\nPress 'q' to quit, 'p' to print to file, 'c' to copy, 'r' to reload.\n\n" +
 			rv.message,
 	)
 }

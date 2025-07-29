@@ -31,7 +31,7 @@ var sharedClient = &http.Client{
 	Timeout:   10 * time.Second,
 }
 
-func RunAllTests(suite parser.TestSuite) {
+func executeSuite(suite parser.TestSuite) {
 	// CLI’dan gelen timeout’u uygula
 	sharedClient.Timeout = config.HTTPTimeout
 
@@ -106,6 +106,18 @@ abortedLoop:
 			}
 		}
 	}
+}
 
-	report.RenderResults()
+func RunAllTests(suite parser.TestSuite) {
+	// 1) Run Test
+	executeSuite(suite)
+
+	// 2) reload
+	reload := func() {
+		report.ClearResults() // önceki sonuçları sil
+		executeSuite(suite)   // aynı testleri tekrar çalıştır
+	}
+
+	// 3) Bubble Tea ekranını aç – reload’u geçir
+	report.RenderResults(reload)
 }

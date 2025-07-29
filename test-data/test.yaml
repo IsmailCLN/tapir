@@ -8,12 +8,12 @@ tests:
       status: 200
 
   - name: Get Single User
-    method: GET
+    method: POST
     url: https://jsonplaceholder.typicode.com/users/1
     headers:
       Content-Type: application/json
     expect:
-      status: 20
+      status: 200
       body: | 
         {
           "id": 1,

@@ -46,6 +46,14 @@ func Run(ctx context.Context, suites []domain.TestSuite) ([]Result, error) {
 
 			// 3) Expectation’ları değerlendir
 			for _, exp := range r.Expect {
+				// ➊ Kullanıcı YAML’inden gelen parametreleri kopyala
+				kwargs := make(map[string]interface{}, len(exp.Kwargs)+1)
+				for k, v := range exp.Kwargs {
+					kwargs[k] = v
+				}
+				// ➋ Otomatik ek parametreler
+				kwargs["status_code"] = resp.StatusCode
+
 				f, ok := assert.Get(exp.Type)
 				if !ok {
 					results = append(results, Result{
@@ -58,7 +66,7 @@ func Run(ctx context.Context, suites []domain.TestSuite) ([]Result, error) {
 					continue
 				}
 
-				err := f(body, exp.Kwargs)
+				err := f(body, kwargs)
 				results = append(results, Result{
 					Suite:    s.Name,
 					Request:  r.Name,

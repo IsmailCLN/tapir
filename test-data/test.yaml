@@ -9,3 +9,7 @@
           kwargs: { column: price, min: 100, max: 20000 }        
         - expectation_type: expect_number_to_be_between
           kwargs: { column: price, min: 100 }
+        - expectation_type: expect_status_code_between
+          kwargs:
+            min: 300
+            max: 499

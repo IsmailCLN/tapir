@@ -1,42 +1,49 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"time"
 
-	"github.com/IsmailCLN/tapir/internal/adapter/http"
-	"github.com/IsmailCLN/tapir/internal/adapter/yaml"
-	"github.com/IsmailCLN/tapir/internal/config"
+	"github.com/IsmailCLN/tapir/internal/parser"
+	"github.com/IsmailCLN/tapir/internal/runner"
+	"github.com/IsmailCLN/tapir/internal/ui"
 	"github.com/spf13/cobra"
 )
 
-var (
-	timeoutValue time.Duration
-	failFast     bool
-)
-
-var runCmd = &cobra.Command{
-	Use:   "run [yaml-file]",
-	Short: "Run a YAML test suite",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		config.HTTPTimeout = timeoutValue
-		config.FailFast = failFast
-
-		suitePath := args[0]
-		suite, err := yaml.LoadTestSuite(suitePath)
-		if err != nil {
-			fmt.Printf("Error loading test suite: %v\n", err)
-			os.Exit(1)
-		}
-
-		http.RunAllTests(suite)
-	},
-}
+var file string
 
 func init() {
-	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().DurationVar(&timeoutValue, "timeout", 10*time.Second, "HTTP request timeout (e.g. 5s, 1500ms, 1m)")
-	runCmd.Flags().BoolVar(&failFast, "fail-fast", false, "Stop executing further tests after the first failure")
+	runCmd.Flags().StringVarP(&file, "file", "f", "",
+		"Path to a YAML test-suite")
+}
+
+var runCmd = &cobra.Command{
+	Use:   "run [suite.yaml]",
+	Short: "Run a test suite",
+	Args:  cobra.RangeArgs(0, 1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		var path string
+		switch {
+		case file != "":
+			path = file
+		case len(args) == 1:
+			path = args[0]
+		default:
+			return fmt.Errorf("no suite file given (use arg or -f)")
+		}
+
+		suites, err := parser.LoadTestSuite(path)
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+		results, err := runner.Run(ctx, suites)
+		if err != nil {
+			return err
+		}
+
+		return ui.Render(results)
+	},
 }

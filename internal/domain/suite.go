@@ -1,20 +1,24 @@
 package domain
 
-type TestCase struct {
-	Name    string            `yaml:"name"`
+type TestSuite struct {
+	Name     string        `yaml:"suite_name"`
+	Requests []TestRequest `yaml:"requests"`
+}
+
+type TestRequest struct {
+	Name   string        `yaml:"name"`
+	Req    HTTPRequest   `yaml:"request"`
+	Expect []Expectation `yaml:"expect"`
+}
+
+type HTTPRequest struct {
 	Method  string            `yaml:"method"`
 	URL     string            `yaml:"url"`
-	Headers map[string]string `yaml:"headers"`
-	Body    string            `yaml:"body"`
-	Expect  Expectation       `yaml:"expect"`
+	Body    any               `yaml:"body,omitempty"`
+	Headers map[string]string `yaml:"headers,omitempty"`
 }
 
 type Expectation struct {
-	Status  int               `yaml:"status"`
-	Body    string            `yaml:"body,omitempty"`
-	Extract map[string]string `yaml:"extract,omitempty"` // <key>: <jsonpath>
-}
-
-type TestSuite struct {
-	Tests []TestCase `yaml:"tests"`
+	Type   string                 `yaml:"expectation_type"`
+	Kwargs map[string]interface{} `yaml:"kwargs"`
 }

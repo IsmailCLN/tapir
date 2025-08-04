@@ -3,7 +3,7 @@ package assert
 import (
 	"fmt"
 
-	"github.com/IsmailCLN/tapir/internal/utils"
+	"github.com/IsmailCLN/tapir/internal/helpers"
 )
 
 const (
@@ -13,15 +13,15 @@ const (
 )
 
 func ExpectStatusCodeBetween(_ []byte, kw map[string]any) error {
-	code, err := utils.Int(kw, keyStatus)
+	code, err := helpers.Int(kw, keyStatus)
 	if err != nil {
 		return err
 	}
-	min, err := utils.Int(kw, keyMin)
+	min, err := helpers.Int(kw, keyMin)
 	if err != nil {
 		return err
 	}
-	max, err := utils.Int(kw, keyMax)
+	max, err := helpers.Int(kw, keyMax)
 	if err != nil {
 		return err
 	}

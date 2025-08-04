@@ -3,7 +3,7 @@ package assert
 import (
 	"fmt"
 
-	"github.com/IsmailCLN/tapir/internal/utils"
+	"github.com/IsmailCLN/tapir/internal/helpers"
 )
 
 const (
@@ -12,11 +12,11 @@ const (
 )
 
 func ExpectStatusCodeEquals(_ []byte, kw map[string]any) error {
-	actual, err := utils.Int(kw, keyStatusToEqual)
+	actual, err := helpers.Int(kw, keyStatusToEqual)
 	if err != nil {
 		return err
 	}
-	expected, err := utils.Int(kw, keyExpected)
+	expected, err := helpers.Int(kw, keyExpected)
 	if err != nil {
 		return err
 	}

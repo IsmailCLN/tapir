@@ -8,7 +8,7 @@ import (
 
 const (
 	keyStatusToEqual = "status_code" // runner enjekte ediyor
-	keyExpected      = "code"
+	keyExpected      = "code"        // YAML
 )
 
 func ExpectStatusCodeEquals(_ []byte, kw map[string]any) error {

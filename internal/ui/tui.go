@@ -1,4 +1,3 @@
-// internal/ui/tui.go  – tamamı
 package ui
 
 import (
@@ -37,9 +36,8 @@ func (m model) View() string {
 		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'q' to quit.\n")
 }
 
-// –– Yardımcılar ––//
+// –– Helpers ––//
 func styleCell(row, col int) lgl.Style {
-	// 1) Hücre genişliği / hizası gibi mevcut stilleri koru
 	var s lgl.Style
 	switch {
 	case row == ltable.HeaderRow:
@@ -54,13 +52,10 @@ func styleCell(row, col int) lgl.Style {
 		s = MediumCell
 	}
 
-	// 2) Header hariç her satıra “şeritleme” uygula
 	if row != ltable.HeaderRow {
 		if row%2 == 0 {
-			// Çift satırlar → açık gri yazı
 			s = s.Copy().Foreground(lgl.Color("#bfbfbf"))
 		} else {
-			// Tek satırlar → beyaz yazı (varsayılan)
 			s = s.Copy().Foreground(lgl.Color("#ffffff"))
 		}
 	}

@@ -50,17 +50,10 @@ func (rv resultView) View() string {
 		Rows(rv.rows...)
 
 	return lgl.NewStyle().Margin(1, 2).
-		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'q' to quit.\n\n" + rv.message)
+		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'p' to save as markdown, 'q' to quit.\n\n" + rv.message)
 }
 
 // –– Helpers –– //
-func checkIOErr(successMsg string, err error) string {
-	if err != nil {
-		return red("Error: " + err.Error())
-	}
-	return green(successMsg)
-}
-
 func styleCell(row, col int) lgl.Style {
 	var s lgl.Style
 	switch {
@@ -129,9 +122,9 @@ func (rv resultView) getRawOutput() string {
 	fmt.Fprintln(w, "✓\tSuite\tRequest\tTest\tError")
 
 	for _, r := range rv.results {
-		status := "✗"
+		icon := "✗"
 		if r.Passed {
-			status = "✓"
+			icon = "✓"
 			passed++
 		} else {
 			failed++
@@ -143,7 +136,7 @@ func (rv resultView) getRawOutput() string {
 		}
 
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
-			status,
+			icon,
 			r.Suite,
 			r.Request,
 			r.TestName,

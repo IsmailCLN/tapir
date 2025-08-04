@@ -14,3 +14,10 @@ var (
 	LargeCell   = lipgloss.NewStyle().Padding(0, 1).Width(30)
 	ExtraLargeCell = lipgloss.NewStyle().Padding(0, 1).Width(50)
 )
+
+func checkIOErr(successMsg string, err error) string {
+	if err != nil {
+		return red("Error: " + err.Error())
+	}
+	return green(successMsg)
+}

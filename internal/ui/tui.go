@@ -2,9 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/IsmailCLN/tapir/internal/runner"
 	"github.com/atotto/clipboard"
@@ -30,6 +32,10 @@ func (rv resultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 			err := clipboard.WriteAll(rv.getRawOutput())
 			rv.message = checkIOErr("Results copied to clipboard", err)
+		case "p":
+			filename := "tapir-report-" + time.Now().Format("20060102") + ".md"
+			err := os.WriteFile(filename, []byte(rv.getMarkdownOutput()), 0644)
+			rv.message = checkIOErr("Markdown saved to "+filename, err)
 		}
 	}
 	return rv, nil
@@ -154,4 +160,34 @@ func (rv resultView) getRawOutput() string {
 		return strings.ReplaceAll(b.String(), "\n", "\r\n")
 	}
 	return b.String()
+}
+
+func (rv resultView) getMarkdownOutput() string {
+	var sb strings.Builder
+	var passed, failed int
+
+	sb.WriteString("# 🧪 Tapir Test Results\n\n")
+	sb.WriteString("| ✓ | Suite | Request | Test Name | Description |\n")
+	sb.WriteString("|---|-------|---------|-----------|-------------|\n")
+
+	for _, r := range rv.results {
+		icon := "✓"
+		if r.Passed {
+			passed++
+		} else {
+			icon = "✗"
+			failed++
+		}
+
+		errMsg := ""
+		if r.Err != nil {
+			errMsg = r.Err.Error()
+		}
+
+		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
+			icon, r.Suite, r.Request, r.TestName, errMsg))
+	}
+	sb.WriteString(fmt.Sprintf("\n**Summary:** ✅ %d passed, ❌ %d failed\n", passed, failed))
+
+	return sb.String()
 }

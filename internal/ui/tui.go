@@ -54,9 +54,9 @@ func styleCell(row, col int) lgl.Style {
 
 	if row != ltable.HeaderRow {
 		if row%2 == 0 {
-			s = s.Copy().Foreground(lgl.Color("#bfbfbf"))
+			s = s.Foreground(lgl.Color("#bfbfbf"))
 		} else {
-			s = s.Copy().Foreground(lgl.Color("#ffffff"))
+			s = s.Foreground(lgl.Color("#ffffff"))
 		}
 	}
 

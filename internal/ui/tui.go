@@ -13,39 +13,48 @@ import (
 	ltable "github.com/charmbracelet/lipgloss/table"
 )
 
-type model struct {
+type resultView struct {
 	rows    [][]string
 	results []runner.Result
+	message string
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (rv resultView) Init() tea.Cmd { return nil }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rv resultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc", "ctrl+c":
-			return m, tea.Quit
+			return rv, tea.Quit
 		case "c":
-			_ = clipboard.WriteAll(m.getRawOutput())
+			err := clipboard.WriteAll(rv.getRawOutput())
+			rv.message = checkIOErr("Results copied to clipboard", err)
 		}
 	}
-	return m, nil
+	return rv, nil
 }
 
-func (m model) View() string {
+func (rv resultView) View() string {
 	t := ltable.New().
 		Border(lgl.NormalBorder()).
 		BorderStyle(lgl.NewStyle().Foreground(PurpleColor)).
 		StyleFunc(styleCell).
 		Headers("✓", "Suite", "Request", "Test", "Error").
-		Rows(m.rows...)
+		Rows(rv.rows...)
 
 	return lgl.NewStyle().Margin(1, 2).
-		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'q' to quit.\n")
+		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'q' to quit.\n\n" + rv.message)
 }
 
 // –– Helpers –– //
+func checkIOErr(successMsg string, err error) string {
+	if err != nil {
+		return red("Error: " + err.Error())
+	}
+	return green(successMsg)
+}
+
 func styleCell(row, col int) lgl.Style {
 	var s lgl.Style
 	switch {
@@ -98,14 +107,14 @@ func buildRows(results []runner.Result) [][]string {
 
 func Render(results []runner.Result) error {
 	rows := buildRows(results)
-	m := model{rows: rows, results: results}
+	rv := resultView{rows: rows, results: results}
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(rv, tea.WithAltScreen())
 	_, err := p.Run()
 	return err
 }
 
-func (m model) getRawOutput() string {
+func (rv resultView) getRawOutput() string {
 	var b strings.Builder
 	const minColWidth = 4
 	var passed, failed int
@@ -113,7 +122,7 @@ func (m model) getRawOutput() string {
 	w := tabwriter.NewWriter(&b, minColWidth, 0, 3, ' ', 0)
 	fmt.Fprintln(w, "✓\tSuite\tRequest\tTest\tError")
 
-	for _, r := range m.results {
+	for _, r := range rv.results {
 		status := "✗"
 		if r.Passed {
 			status = "✓"

@@ -8,12 +8,9 @@ import (
 	"strconv"
 )
 
-func init() { Register("expect_number_to_be_between", numberBetween) }
-
-func toFloat(v interface{}) (float64, bool) {
+func toFloat(v any) (float64, bool) {
 	switch t := v.(type) {
 
-	// sayısal tipler
 	case int:
 		return float64(t), true
 	case int64:
@@ -36,7 +33,7 @@ func toFloat(v interface{}) (float64, bool) {
 	}
 }
 
-func numberBetween(body []byte, kwargs map[string]interface{}) error {
+func numberBetween(body []byte, kwargs map[string]any) error {
 	field, _ := kwargs["column"].(string)
 	min, _ := toFloat(kwargs["min"])
 	max, maxOk := toFloat(kwargs["max"])
@@ -44,7 +41,7 @@ func numberBetween(body []byte, kwargs map[string]interface{}) error {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := dec.Decode(&m); err != nil {
 		return err
 	}
@@ -59,3 +56,5 @@ func numberBetween(body []byte, kwargs map[string]interface{}) error {
 	}
 	return nil
 }
+
+func init() { Register("expect_number_to_be_between", numberBetween) }

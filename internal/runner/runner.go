@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"maps"
 	"context"
 	"fmt"
 	"io"
@@ -47,10 +48,8 @@ func Run(ctx context.Context, suites []domain.TestSuite) ([]Result, error) {
 			// 3) Expectation’ları değerlendir
 			for _, exp := range r.Expect {
 				// ➊ Kullanıcı YAML’inden gelen parametreleri kopyala
-				kwargs := make(map[string]interface{}, len(exp.Kwargs)+1)
-				for k, v := range exp.Kwargs {
-					kwargs[k] = v
-				}
+				kwargs := make(map[string]any, len(exp.Kwargs)+1)
+				maps.Copy(kwargs, exp.Kwargs)
 				// ➋ Otomatik ek parametreler
 				kwargs["status_code"] = resp.StatusCode
 

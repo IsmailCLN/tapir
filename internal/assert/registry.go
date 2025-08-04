@@ -1,6 +1,6 @@
 package assert
 
-type Func func(respBody []byte, kwargs map[string]interface{}) error
+type Func func(respBody []byte, kwargs map[string]any) error
 
 var registry = map[string]Func{}
 

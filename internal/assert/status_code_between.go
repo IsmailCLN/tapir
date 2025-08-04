@@ -1,6 +1,10 @@
 package assert
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/IsmailCLN/tapir/internal/utils"
+)
 
 const (
 	keyStatus = "status_code" // runner enjekte ediyor
@@ -8,28 +12,16 @@ const (
 	keyMax    = "max"         // YAML
 )
 
-func ExpectStatusCodeBetween(_ []byte, kwargs map[string]interface{}) error {
-	getInt := func(k string) (int, error) {
-		v, ok := kwargs[k]
-		if !ok {
-			return 0, fmt.Errorf("parametre eksik: %s", k)
-		}
-		i, ok := v.(int)
-		if !ok {
-			return 0, fmt.Errorf("%s parametresi int değil", k)
-		}
-		return i, nil
-	}
-
-	code, err := getInt(keyStatus)
+func ExpectStatusCodeBetween(_ []byte, kw map[string]any) error {
+	code, err := utils.Int(kw, keyStatus)
 	if err != nil {
 		return err
 	}
-	min, err := getInt(keyMin)
+	min, err := utils.Int(kw, keyMin)
 	if err != nil {
 		return err
 	}
-	max, err := getInt(keyMax)
+	max, err := utils.Int(kw, keyMax)
 	if err != nil {
 		return err
 	}

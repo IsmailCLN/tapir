@@ -12,4 +12,7 @@
         - expectation_type: expect_status_code_between
           kwargs:
             min: 300
-            max: 499
+            max: 499        
+        - expectation_type: expect_status_code_equals
+          kwargs:
+            code: 200

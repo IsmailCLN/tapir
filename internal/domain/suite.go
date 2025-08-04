@@ -20,5 +20,5 @@ type HTTPRequest struct {
 
 type Expectation struct {
 	Type   string                 `yaml:"expectation_type"`
-	Kwargs map[string]interface{} `yaml:"kwargs"`
+	Kwargs map[string]any `yaml:"kwargs"`
 }

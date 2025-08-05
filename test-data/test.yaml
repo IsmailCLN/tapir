@@ -16,3 +16,38 @@
         - expectation_type: expect_status_code_equals
           kwargs:
             code: 200
+
+- suite_name: auth_flow
+  requests:
+  - name: login
+    request:
+      method: POST
+      url: https://dummyjson.com/auth/login
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          "username": "emilys",
+          "password": "emilyspass",
+          "expiresInMins": 30
+        }
+    expect:
+      - expectation_type: store_token
+        kwargs:
+          json_path: accessToken
+      - expectation_type: expect_status_code_equals
+        kwargs:
+          code: 200
+
+  - name: get_profile
+    request:
+      method: GET
+      url: https://dummyjson.com/auth/me
+      headers:
+        Authorization: "Bearer ${token}"
+    expect:
+      - expectation_type: expect_status_code_equals
+        kwargs:
+          code: 200
+
+

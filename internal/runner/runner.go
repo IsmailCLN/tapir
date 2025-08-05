@@ -1,102 +1,129 @@
 package runner
 
 import (
-	"maps"
-	"context"
-	"fmt"
-	"io"
-	"net/http"
+    "context"
+    "fmt"
+    "io"
+    "net/http"
+    "strings"
 
-	"github.com/IsmailCLN/tapir/internal/assert"
-	"github.com/IsmailCLN/tapir/internal/domain"
-	"github.com/IsmailCLN/tapir/internal/httpclient"
+    "maps"
+
+    "github.com/IsmailCLN/tapir/internal/assert"
+    "github.com/IsmailCLN/tapir/internal/domain"
+    "github.com/IsmailCLN/tapir/internal/httpclient"
+    "github.com/IsmailCLN/tapir/internal/sharedcontext"
 )
 
 // Result holds the outcome of a single request-level expectation.
 type Result struct {
-	Suite    string // test-suite name
-	Request  string // request name
-	Passed   bool   // true when expectation succeeded
-	Err      error  // populated when Passed == false
-	TestName string
+    Suite    string 
+    Request  string 
+    Passed   bool   
+    Err      error  
+    TestName string 
 }
 
 func Run(ctx context.Context, suites []domain.TestSuite) ([]Result, error) {
-	var results []Result
+    var results []Result
 
-	for _, s := range suites {
-		for _, r := range s.Requests {
+    shared := sharedcontext.New()
+    assert.SetSharedContext(shared)
 
-			// 1) HTTP isteğini inşa et
-			req, err := http.NewRequest(r.Req.Method, r.Req.URL, nil)
-			if err != nil {
-				// → İstek baştan çöktü: her expect için ayrı sonuç üret
-				appendRequestErrorResults(&results, s.Name, r, err)
-				continue
-			}
+    for _, s := range suites {
+        for _, r := range s.Requests {
 
-			// 2) Gönder
-			resp, err := httpclient.Do(ctx, req)
-			if err != nil {
-				// → Ağ/bağlantı hatası: yine tüm expect’leri hatalı say
-				appendRequestErrorResults(&results, s.Name, r, err)
-				continue
-			}
-			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
+            // ----- 1. Build request body (string only for now) -----
+            var bodyReader io.Reader
+            if bodyStr, ok := r.Req.Body.(string); ok && bodyStr != "" {
+                bodyReader = strings.NewReader(bodyStr)
+            }
 
-			// 3) Expectation’ları değerlendir
-			for _, exp := range r.Expect {
-				// ➊ Kullanıcı YAML’inden gelen parametreleri kopyala
-				kwargs := make(map[string]any, len(exp.Kwargs)+1)
-				maps.Copy(kwargs, exp.Kwargs)
-				// ➋ Otomatik ek parametreler
-				kwargs["status_code"] = resp.StatusCode
+            // ----- 2. Construct HTTP request -----
+            req, err := http.NewRequest(r.Req.Method, r.Req.URL, bodyReader)
+            if err != nil {
+                appendRequestErrorResults(&results, s.Name, r, err)
+                continue
+            }
 
-				f, ok := assert.Get(exp.Type)
-				if !ok {
-					results = append(results, Result{
-						Suite:    s.Name,
-						Request:  r.Name,
-						Passed:   false,
-						Err:      fmt.Errorf("unknown expectation %s", exp.Type),
-						TestName: exp.Type,
-					})
-					continue
-				}
+            // ----- 3. Apply headers with placeholder substitution -----
+            for k, v := range r.Req.Headers {
+                if strings.Contains(v, "${token}") {
+                    if t, ok := shared.Get("token"); ok {
+                        v = strings.ReplaceAll(v, "${token}", t)
+                    }
+                }
+                req.Header.Set(k, v)
+            }
 
-				err := f(body, kwargs)
-				results = append(results, Result{
-					Suite:    s.Name,
-					Request:  r.Name,
-					Passed:   err == nil,
-					Err:      err,
-					TestName: exp.Type,
-				})
-			}
-		}
-	}
-	return results, nil
+            // ----- 4. Send request -----
+            resp, err := httpclient.Do(ctx, req)
+            if err != nil {
+                appendRequestErrorResults(&results, s.Name, r, err)
+                continue
+            }
+
+            bodyBytes, err := io.ReadAll(resp.Body)
+            resp.Body.Close()
+            if err != nil {
+                appendRequestErrorResults(&results, s.Name, r, err)
+                continue
+            }
+
+            // ----- 5. Evaluate expectations -----
+            for _, exp := range r.Expect {
+                // 5a. Copy user‑provided kwargs
+                kwargs := make(map[string]any, len(exp.Kwargs)+1)
+                maps.Copy(kwargs, exp.Kwargs)
+
+                // 5b. Inject auto params
+                kwargs["status_code"] = resp.StatusCode
+
+                f, ok := assert.Get(exp.Type)
+                if !ok {
+                    results = append(results, Result{
+                        Suite:    s.Name,
+                        Request:  r.Name,
+                        Passed:   false,
+                        Err:      fmt.Errorf("unknown expectation %s", exp.Type),
+                        TestName: exp.Type,
+                    })
+                    continue
+                }
+
+                err := f(bodyBytes, kwargs)
+                results = append(results, Result{
+                    Suite:    s.Name,
+                    Request:  r.Name,
+                    Passed:   err == nil,
+                    Err:      err,
+                    TestName: exp.Type,
+                })
+            }
+        }
+    }
+
+    return results, nil
 }
 
 func appendRequestErrorResults(res *[]Result, suite string, r domain.TestRequest, err error) {
-	if len(r.Expect) == 0 {
-		*res = append(*res, Result{
-			Suite:    suite,
-			Request:  r.Name,
-			Passed:   false,
-			Err:      err,
-			TestName: "request_error",
-		})
-		return
-	}
-	for _, exp := range r.Expect {
-		*res = append(*res, Result{
-			Suite:    suite,
-			Request:  r.Name,
-			Passed:   false,
-			Err:      err,
-			TestName: exp.Type,
-		})
-	}
+    if len(r.Expect) == 0 {
+        *res = append(*res, Result{
+            Suite:    suite,
+            Request:  r.Name,
+            Passed:   false,
+            Err:      err,
+            TestName: "request_error",
+        })
+        return
+    }
+    for _, exp := range r.Expect {
+        *res = append(*res, Result{
+            Suite:    suite,
+            Request:  r.Name,
+            Passed:   false,
+            Err:      err,
+            TestName: exp.Type,
+        })
+    }
 }

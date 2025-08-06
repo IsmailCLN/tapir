@@ -50,4 +50,22 @@
         kwargs:
           code: 200
 
-
+- suite_name: static_body_check
+  requests:
+    - name: todo_1_fixed_body
+      request:
+        method: GET
+        url: https://jsonplaceholder.typicode.com/todos/1
+      expect:
+        - expectation_type: expect_body_equals
+          kwargs:
+            value: |
+              {
+                "userId": 1,
+                "id": 1,
+                "title": "delectus aut autem",
+                "completed": false
+              }
+        - expectation_type: expect_status_code_equals
+          kwargs:
+            code: 200

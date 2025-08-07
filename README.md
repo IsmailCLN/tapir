@@ -100,38 +100,24 @@ Global flags:
 ## YAML Suite Format
 
 ```yaml
-tests:
-  - name: Get Single User
-    method: GET
-    url: https://jsonplaceholder.typicode.com/users/1
-    headers:
-        Content-Type: application/json
-    expect:
-        status: 200
-        body: | 
-            {
-                "id": 1,
-                "name": "Leanne Graham",
-                "username": "Bret",
-                "email": "Sincere@april.biz",
-                "address": {
-                    "street": "Kulas Light",
-                    "suite": "Apt. 556",
-                    "city": "Gwenborough",
-                    "zipcode": "92998-3874",
-                    "geo": {
-                        "lat": "-37.3159",
-                        "lng": "81.1496"
-                    }
-                },
-                "phone": "1-770-736-8031 x56442",
-                "website": "hildegard.org",
-                "company": {
-                    "name": "Romaguera-Crona",
-                    "catchPhrase": "Multi-layered client-server neural-net",
-                    "bs": "harness real-time e-markets"
-                }
-            }
+- suite_name: finance
+  requests:
+    - name: btcusdt_price
+      request:
+        method: GET
+        url: https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
+      expect:
+        - expectation_type: expect_number_to_be_between
+          kwargs: { column: price, min: 100, max: 20000 }        
+        - expectation_type: expect_number_to_be_between
+          kwargs: { column: price, min: 100 }
+        - expectation_type: expect_status_code_between
+          kwargs:
+            min: 300
+            max: 499        
+        - expectation_type: expect_status_code_equals
+          kwargs:
+            code: 200
 ```
 
 See **`test-data/test.yaml`** for a complete example.

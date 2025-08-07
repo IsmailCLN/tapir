@@ -69,3 +69,8 @@
         - expectation_type: expect_status_code_equals
           kwargs:
             code: 200
+        - expectation_type: expect_body_contains
+          kwargs:
+            value: | 
+              "title": "delectus aut autem",
+              "completed": false

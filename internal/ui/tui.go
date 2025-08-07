@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/IsmailCLN/tapir/internal/helpers"
 	"github.com/IsmailCLN/tapir/internal/runner"
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -90,7 +91,7 @@ func buildRows(results []runner.Result) [][]string {
 
 		errMsg := ""
 		if r.Err != nil {
-			errMsg = r.Err.Error()
+			errMsg = helpers.Sanitize(r.Err.Error())
 		}
 
 		rows[i] = []string{
@@ -132,7 +133,7 @@ func (rv resultView) getRawOutput() string {
 
 		errMsg := ""
 		if r.Err != nil {
-			errMsg = r.Err.Error()
+			errMsg = helpers.Sanitize(r.Err.Error())
 		}
 
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
@@ -174,7 +175,7 @@ func (rv resultView) getMarkdownOutput() string {
 
 		errMsg := ""
 		if r.Err != nil {
-			errMsg = r.Err.Error()
+			errMsg = helpers.Sanitize(r.Err.Error())
 		}
 
 		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n",

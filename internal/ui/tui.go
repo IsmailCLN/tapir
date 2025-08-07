@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -8,7 +9,9 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/IsmailCLN/tapir/internal/domain"
 	"github.com/IsmailCLN/tapir/internal/helpers"
+	"github.com/IsmailCLN/tapir/internal/parser"
 	"github.com/IsmailCLN/tapir/internal/runner"
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,26 +20,50 @@ import (
 )
 
 type resultView struct {
-	rows    [][]string
-	results []runner.Result
-	message string
+	rows       [][]string
+	results    []runner.Result
+	message    string
+	suitePaths []string
 }
 
 func (rv resultView) Init() tea.Cmd { return nil }
 
 func (rv resultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch m := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch m.String() {
+
+		case "r":
+			var allSuites []domain.TestSuite
+			for _, p := range rv.suitePaths {
+				s, err := parser.LoadTestSuite(p)
+				if err != nil {
+					rv.message = checkIOErr("reload error", err)
+					return rv, nil
+				}
+				allSuites = append(allSuites, s...)
+			}
+			newResults, err := runner.Run(context.Background(), allSuites)
+			if err != nil {
+				rv.message = checkIOErr("run error", err)
+				return rv, nil
+			}
+			rv.results = newResults
+			rv.rows = buildRows(newResults)
+			rv.message = "Re-run completed at " + time.Now().Format("15:04:05")
+
 		case "q", "esc", "ctrl+c":
 			return rv, tea.Quit
+
 		case "c":
 			err := clipboard.WriteAll(rv.getRawOutput())
 			rv.message = checkIOErr("Results copied to clipboard", err)
+
 		case "p":
 			filename := "tapir-report-" + time.Now().Format("20060102") + ".md"
 			err := os.WriteFile(filename, []byte(rv.getMarkdownOutput()), 0644)
 			rv.message = checkIOErr("Markdown saved to "+filename, err)
+
 		}
 	}
 	return rv, nil
@@ -51,7 +78,7 @@ func (rv resultView) View() string {
 		Rows(rv.rows...)
 
 	return lgl.NewStyle().Margin(1, 2).
-		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'p' to save as markdown, 'q' to quit.\n\n" + rv.message)
+		Render("🧪 Tapir Test Results\n\n" + t.String() + "\nPress 'c' to copy, 'p' to save as markdown, 'r' to rerun, 'q' to quit.\n\n" + rv.message)
 }
 
 // –– Helpers –– //
@@ -105,11 +132,13 @@ func buildRows(results []runner.Result) [][]string {
 	return rows
 }
 
-func Render(results []runner.Result) error {
-	rows := buildRows(results)
-	rv := resultView{rows: rows, results: results}
-
-	p := tea.NewProgram(rv, tea.WithAltScreen())
+func Render(paths []string, results []runner.Result) error {
+	rv := resultView{
+		rows:       buildRows(results),
+		results:    results,
+		suitePaths: paths,
+	}
+	p := tea.NewProgram(rv)
 	_, err := p.Run()
 	return err
 }

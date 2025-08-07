@@ -44,6 +44,6 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		return ui.Render(results)
+		return ui.Render([]string{path}, results)
 	},
 }

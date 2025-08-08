@@ -78,3 +78,7 @@
           kwargs:
             header: Content-Type
             value: application/json; charset=utf-8
+        - expectation_type: expect_header_contains
+          kwargs:
+            header: Cache-Control
+            value: max-age

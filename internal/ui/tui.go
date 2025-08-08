@@ -119,6 +119,7 @@ func (rv resultView) View() string {
 	t := ltable.New().
 		Border(lgl.NormalBorder()).
 		BorderStyle(lgl.NewStyle().Foreground(PurpleColor)).
+		BorderRow(true).
 		StyleFunc(styleCell).
 		Headers("✓", "Suite", "Request", "Test", "Error").
 		Rows(rv.rows...)

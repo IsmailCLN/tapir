@@ -74,3 +74,7 @@
             value: | 
               "title": "delectus aut autem",
               "completed": false
+        - expectation_type: expect_header_equals
+          kwargs:
+            header: Content-Type
+            value: application/json; charset=utf-8

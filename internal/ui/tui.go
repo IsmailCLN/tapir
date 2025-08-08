@@ -85,27 +85,21 @@ func handleSaveMarkdown(rv resultView) (tea.Model, tea.Cmd) {
 	return rv, nil
 }
 
-// !!! ASENKRON RERUN !!!
-// Ağır işleri burada yapmıyoruz; sadece guard'lar ve komut dönüşü var.
 func handleRerun(rv resultView) (tea.Model, tea.Cmd) {
-	// Çalışıyorsa tekrar başlatma → kırmızı mesaj
 	if rv.isRunning {
 		rv.message = checkIOErr("Already running, please wait…", errors.New("busy"))
 		return rv, nil
 	}
-	// 3 sn cooldown → kırmızı mesaj
 	if !rv.lastRerun.IsZero() && time.Since(rv.lastRerun) < 3*time.Second {
-		rv.message = checkIOErr("Please wait a moment before re-running", errors.New("cooldown"))
+		rv.message = checkIOErr("Please wait a moment before re-running", errors.New("too many frequent requests"))
 		return rv, nil
 	}
 
-	// Arka planda çalıştır
 	rv.isRunning = true
 	rv.message = checkIOErr("Re-running…", nil)
 	return rv, rerunCmd(rv.suitePaths)
 }
 
-// Arka plan işi: YAML'leri yükle, runner'ı çalıştır, sonucu mesajla geri dön.
 func rerunCmd(paths []string) tea.Cmd {
 	return func() tea.Msg {
 		var allSuites []domain.TestSuite

@@ -119,7 +119,6 @@ func (rv resultView) View() string {
 	t := ltable.New().
 		Border(lgl.NormalBorder()).
 		BorderStyle(lgl.NewStyle().Foreground(PurpleColor)).
-		BorderRow(true).
 		StyleFunc(styleCell).
 		Headers("✓", "Suite", "Request", "Test", "Error").
 		Rows(rv.rows...)
@@ -146,9 +145,9 @@ func styleCell(row, col int) lgl.Style {
 
 	if row != ltable.HeaderRow {
 		if row%2 == 0 {
-			s = s.Foreground(lgl.Color("#bfbfbf"))
+			s = s.Foreground(lgl.Color("#F2EFED"))
 		} else {
-			s = s.Foreground(lgl.Color("#ffffff"))
+			s = s.Foreground(lgl.Color("#A5B4FC"))
 		}
 	}
 

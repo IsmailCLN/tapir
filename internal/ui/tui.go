@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -24,49 +25,100 @@ type resultView struct {
 	results    []runner.Result
 	message    string
 	suitePaths []string
+	isRunning  bool
+	lastRerun  time.Time
+}
+
+type rerunDoneMsg struct {
+	results []runner.Result
+	err     error
 }
 
 func (rv resultView) Init() tea.Cmd { return nil }
 
 func (rv resultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
+	case rerunDoneMsg:
+		rv.isRunning = false
+		rv.lastRerun = time.Now()
+
+		if m.err != nil {
+			rv.message = checkIOErr("run error", m.err) // kırmızı
+			return rv, nil
+		}
+		rv.results = m.results
+		rv.rows = buildRows(m.results)
+		rv.message = checkIOErr("Re-run completed at "+rv.lastRerun.Format("15:04:05"), nil) // yeşil
+		return rv, nil
+
 	case tea.KeyMsg:
-		switch m.String() {
-
-		case "r":
-			var allSuites []domain.TestSuite
-			for _, p := range rv.suitePaths {
-				s, err := parser.LoadTestSuite(p)
-				if err != nil {
-					rv.message = checkIOErr("reload error", err)
-					return rv, nil
-				}
-				allSuites = append(allSuites, s...)
-			}
-			newResults, err := runner.Run(context.Background(), allSuites)
-			if err != nil {
-				rv.message = checkIOErr("run error", err)
-				return rv, nil
-			}
-			rv.results = newResults
-			rv.rows = buildRows(newResults)
-			rv.message = "Re-run completed at " + time.Now().Format("15:04:05")
-
-		case "q", "esc", "ctrl+c":
-			return rv, tea.Quit
-
-		case "c":
-			err := clipboard.WriteAll(rv.getRawOutput())
-			rv.message = checkIOErr("Results copied to clipboard", err)
-
-		case "p":
-			filename := "tapir-report-" + time.Now().Format("20060102") + ".md"
-			err := os.WriteFile(filename, []byte(rv.getMarkdownOutput()), 0644)
-			rv.message = checkIOErr("Markdown saved to "+filename, err)
-
+		if h, ok := rv.keyHandlers()[m.String()]; ok {
+			return h(rv)
 		}
 	}
 	return rv, nil
+}
+
+func (rv resultView) keyHandlers() map[string]func(resultView) (tea.Model, tea.Cmd) {
+	return map[string]func(resultView) (tea.Model, tea.Cmd){
+		"r":      handleRerun,
+		"c":      handleCopy,
+		"p":      handleSaveMarkdown,
+		"q":      handleQuit,
+		"esc":    handleQuit,
+		"ctrl+c": handleQuit,
+	}
+}
+
+func handleQuit(rv resultView) (tea.Model, tea.Cmd) { return rv, tea.Quit }
+
+func handleCopy(rv resultView) (tea.Model, tea.Cmd) {
+	err := clipboard.WriteAll(rv.getRawOutput())
+	rv.message = checkIOErr("Results copied to clipboard", err)
+	return rv, nil
+}
+
+func handleSaveMarkdown(rv resultView) (tea.Model, tea.Cmd) {
+	filename := "tapir-report-" + time.Now().Format("20060102") + ".md"
+	err := os.WriteFile(filename, []byte(rv.getMarkdownOutput()), 0644)
+	rv.message = checkIOErr("Markdown saved to "+filename, err)
+	return rv, nil
+}
+
+// !!! ASENKRON RERUN !!!
+// Ağır işleri burada yapmıyoruz; sadece guard'lar ve komut dönüşü var.
+func handleRerun(rv resultView) (tea.Model, tea.Cmd) {
+	// Çalışıyorsa tekrar başlatma → kırmızı mesaj
+	if rv.isRunning {
+		rv.message = checkIOErr("Already running, please wait…", errors.New("busy"))
+		return rv, nil
+	}
+	// 3 sn cooldown → kırmızı mesaj
+	if !rv.lastRerun.IsZero() && time.Since(rv.lastRerun) < 3*time.Second {
+		rv.message = checkIOErr("Please wait a moment before re-running", errors.New("cooldown"))
+		return rv, nil
+	}
+
+	// Arka planda çalıştır
+	rv.isRunning = true
+	rv.message = checkIOErr("Re-running…", nil)
+	return rv, rerunCmd(rv.suitePaths)
+}
+
+// Arka plan işi: YAML'leri yükle, runner'ı çalıştır, sonucu mesajla geri dön.
+func rerunCmd(paths []string) tea.Cmd {
+	return func() tea.Msg {
+		var allSuites []domain.TestSuite
+		for _, p := range paths {
+			s, err := parser.LoadTestSuite(p)
+			if err != nil {
+				return rerunDoneMsg{err: fmt.Errorf("reload error: %w", err)}
+			}
+			allSuites = append(allSuites, s...)
+		}
+		res, err := runner.Run(context.Background(), allSuites)
+		return rerunDoneMsg{results: res, err: err}
+	}
 }
 
 func (rv resultView) View() string {

@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -11,11 +12,22 @@ func Int(kwargs map[string]any, key string) (int, error) {
 	if !ok {
 		return 0, fmt.Errorf("missing parameter: %s", key)
 	}
-	i, ok := v.(int)
-	if !ok {
-		return 0, fmt.Errorf("%s parameter is not an int", key)
+	switch t := v.(type) {
+	case int:
+		return t, nil
+	case int64:
+		return int(t), nil
+	case float64:
+		return int(t), nil
+	case string:
+		i, err := strconv.Atoi(t)
+		if err != nil {
+			return 0, fmt.Errorf("%s must be int, got %q", key, t)
+		}
+		return i, nil
+	default:
+		return 0, fmt.Errorf("%s must be int, got %T", key, v)
 	}
-	return i, nil
 }
 
 // sanitize: makes \n, \r\n, \t ve \" more readable.

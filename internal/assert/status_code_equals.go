@@ -7,25 +7,25 @@ import (
 )
 
 const (
-	keyStatusToEqual = "status_code" // runner enjekte ediyor
+	keyStatusToEqual = "status_code" // injected by runner
 	keyExpected      = "code"        // YAML
 )
 
-func ExpectStatusCodeEquals(_ []byte, kw map[string]any) error {
-	actual, err := helpers.Int(kw, keyStatusToEqual)
-	if err != nil {
-		return err
+func expectStatusCodeEquals(_ []byte, kw map[string]any) error {
+	actual, ok := helpers.GetInt(kw, keyStatusToEqual)
+	if !ok {
+		return fmt.Errorf("expect_status_code_equals: %q was not injected or not an integer", keyStatusToEqual)
 	}
-	expected, err := helpers.Int(kw, keyExpected)
-	if err != nil {
-		return err
+	expected, ok := helpers.GetInt(kw, keyExpected)
+	if !ok {
+		return fmt.Errorf("expect_status_code_equals: missing or invalid %q", keyExpected)
 	}
 	if actual != expected {
-		return fmt.Errorf("status code %d ≠ %d", actual, expected)
+		return fmt.Errorf("status code mismatch: got=%d, want=%d", actual, expected)
 	}
 	return nil
 }
 
 func init() {
-	Register("expect_status_code_equals", ExpectStatusCodeEquals)
+	Register("expect_status_code_equals", expectStatusCodeEquals)
 }

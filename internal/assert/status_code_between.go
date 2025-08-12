@@ -7,27 +7,30 @@ import (
 )
 
 const (
-	keyStatus = "status_code" // runner enjekte ediyor
+	keyStatus = "status_code" // injected by runner
 	keyMin    = "min"         // YAML
 	keyMax    = "max"         // YAML
 )
 
 func ExpectStatusCodeBetween(_ []byte, kw map[string]any) error {
-	code, err := helpers.Int(kw, keyStatus)
-	if err != nil {
-		return err
+	code, ok := helpers.GetInt(kw, keyStatus)
+	if !ok {
+		return fmt.Errorf("expect_status_code_between: %q was not injected or not an integer", keyStatus)
 	}
-	min, err := helpers.Int(kw, keyMin)
-	if err != nil {
-		return err
+	min, ok := helpers.GetInt(kw, keyMin)
+	if !ok {
+		return fmt.Errorf("expect_status_code_between: missing or invalid %q", keyMin)
 	}
-	max, err := helpers.Int(kw, keyMax)
-	if err != nil {
-		return err
+	max, ok := helpers.GetInt(kw, keyMax)
+	if !ok {
+		return fmt.Errorf("expect_status_code_between: missing or invalid %q", keyMax)
+	}
+	if min > max {
+		return fmt.Errorf("expect_status_code_between: %q must be <= %q (got %d > %d)", keyMin, keyMax, min, max)
 	}
 
 	if code < min || code > max {
-		return fmt.Errorf("status %d ∉ [%d–%d]", code, min, max)
+		return fmt.Errorf("status %d is not within [%d..%d]", code, min, max)
 	}
 	return nil
 }

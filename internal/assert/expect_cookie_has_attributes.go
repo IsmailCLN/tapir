@@ -12,37 +12,49 @@ import (
 func init() { Register("expect_cookie_has_attributes", expectCookieHasAttributes) }
 
 func expectCookieHasAttributes(_ []byte, kwargs map[string]any) error {
-	name, err := getCookieName(kwargs)
+	name, err := getCookieNameCompat(kwargs)
 	if err != nil {
 		return err
 	}
-	h, err := coerceHeaders(kwargs["headers"])
+
+	hdr, err := helpers.AsHTTPHeader(kwargs["headers"])
 	if err != nil {
 		return fmt.Errorf("headers not available: %w", err)
 	}
 
-	wantPath, _ := helpers.String(kwargs, "path")
-	wantDomain, _ := helpers.String(kwargs, "domain")
-	wantHttpOnly, hasHttpOnly := helpers.Bool(kwargs, "http_only")
-	wantSecure, hasSecure := helpers.Bool(kwargs, "secure")
-	wantSameSiteStr, hasSameSite := helpers.String(kwargs, "samesite")
-	minMaxAge, hasMinMaxAge, err := helpers.IntOpt(kwargs, "min_max_age")
-	if err != nil {
-		return fmt.Errorf("min_max_age: %v", err)
+	wantPath, _ := helpers.GetString(kwargs, "path")
+	wantDomain, _ := helpers.GetString(kwargs, "domain")
+	wantHttpOnly, hasHttpOnly := helpers.GetBool(kwargs, "http_only")
+	wantSecure, hasSecure := helpers.GetBool(kwargs, "secure")
+	wantSameSiteStr, hasSameSite := helpers.GetString(kwargs, "samesite")
+
+	// min_max_age: distinguish "absent" vs "present but invalid"
+	var (
+		minMaxAge     int
+		hasMinMaxAge  bool
+	)
+	if _, present := kwargs["min_max_age"]; present {
+		v, err := helpers.AsInt(kwargs["min_max_age"])
+		if err != nil {
+			return fmt.Errorf("min_max_age: %v", err)
+		}
+		minMaxAge = v
+		hasMinMaxAge = true
 	}
-	requireNotExpired, hasRequireNotExpired := helpers.Bool(kwargs, "not_expired")
+
+	requireNotExpired, hasRequireNotExpired := helpers.GetBool(kwargs, "not_expired")
 
 	var wantSameSite http.SameSite
 	if hasSameSite {
-		var err error
-		wantSameSite, err = parseSameSite(wantSameSiteStr)
+		ss, err := parseSameSite(wantSameSiteStr)
 		if err != nil {
 			return err
 		}
+		wantSameSite = ss
 	}
 
-	resp := &http.Response{Header: h}
 	now := time.Now()
+	resp := &http.Response{Header: hdr}
 
 	for _, c := range resp.Cookies() {
 		if c.Name != name {
@@ -96,6 +108,16 @@ func expectCookieHasAttributes(_ []byte, kwargs map[string]any) error {
 	}
 
 	return fmt.Errorf("cookie %q not found", name)
+}
+
+func getCookieNameCompat(kwargs map[string]any) (string, error) {
+	if s, ok := helpers.GetString(kwargs, "cookieName"); ok && strings.TrimSpace(s) != "" {
+		return s, nil
+	}
+	if s, ok := helpers.GetString(kwargs, "name"); ok && strings.TrimSpace(s) != "" {
+		return s, nil
+	}
+	return "", fmt.Errorf("expect_cookie_has_attributes: missing or empty %q", "cookieName")
 }
 
 func isCookieExpired(c *http.Cookie, now time.Time) bool {

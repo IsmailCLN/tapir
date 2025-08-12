@@ -47,4 +47,4 @@ func expectContentType(_ []byte, kw map[string]any) error {
 	return nil
 }
 
-func init() { Register("expect_content_type", expectContentType) }
+func init() { Register("expect_content_type_matches", expectContentType) }

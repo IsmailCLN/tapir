@@ -7,4 +7,5 @@ const (
 	keyStatus          = "status_code"
 	keyMin             = "min"
 	keyMax             = "max"
+	keyExpectedStatus  = "code"
 )

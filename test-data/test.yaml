@@ -19,7 +19,7 @@
         - expectation_type: expect_status_code_in
           kwargs:
             codes: [200, 201, 204]
-            
+
 # - suite_name: auth_flow
 #   requests:
 #   - name: login

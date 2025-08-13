@@ -11,9 +11,9 @@ func expectStatusCodeEquals(_ []byte, kw map[string]any) error {
 	if !ok {
 		return fmt.Errorf("expect_status_code_equals: %q was not injected or not an integer", keyStatus)
 	}
-	expected, ok := helpers.GetInt(kw, keyStatus)
+	expected, ok := helpers.GetInt(kw, keyExpectedStatus)
 	if !ok {
-		return fmt.Errorf("expect_status_code_equals: missing or invalid %q", keyStatus)
+		return fmt.Errorf("expect_status_code_equals: missing or invalid %q", expected)
 	}
 	if actual != expected {
 		return fmt.Errorf("status code mismatch: got=%d, want=%d", actual, expected)

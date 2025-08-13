@@ -20,70 +20,71 @@
           kwargs:
             codes: [200, 201, 204]
 
-# - suite_name: auth_flow
-#   requests:
-#   - name: login
-#     request:
-#       method: POST
-#       url: https://dummyjson.com/auth/login
-#       headers:
-#         Content-Type: application/json
-#       body: |
-#         {
-#           "username": "emilys",
-#           "password": "emilyspass",
-#           "expiresInMins": 30
-#         }
-#     expect:
-#       - expectation_type: store_token
-#         kwargs:
-#           json_path: accessToken
-#       - expectation_type: expect_status_code_equals
-#         kwargs:
-#           code: 200
-#   - name: get_profile
-#     request:
-#       method: GET
-#       url: https://dummyjson.com/auth/me
-#       headers:
-#         Authorization: "Bearer ${token}"
-#     expect:
-#       - expectation_type: expect_status_code_equals
-#         kwargs:
-#           code: 200
+- suite_name: auth_flow
+  requests:
+  - name: login
+    request:
+      method: POST
+      url: https://dummyjson.com/auth/login
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          "username": "emilys",
+          "password": "emilyspass",
+          "expiresInMins": 30
+        }
+    expect:
+      - expectation_type: store_token
+        kwargs:
+          json_path: accessToken
+      - expectation_type: expect_status_code_equals
+        kwargs:
+          code: 200
+  - name: get_profile
+    depends_on: [login]
+    request:
+      method: GET
+      url: https://dummyjson.com/auth/me
+      headers:
+        Authorization: "Bearer ${token}"
+    expect:
+      - expectation_type: expect_status_code_equals
+        kwargs:
+          code: 200
 
-# - suite_name: static_body_check
-#   requests:
-#     - name: todo_1_fixed_body
-#       request:
-#         method: GET
-#         url: https://jsonplaceholder.typicode.com/todos/1
-#       expect:
-#         - expectation_type: expect_body_equals
-#           kwargs:
-#             value: |
-#               {
-#                 "userId": 1,
-#                 "id": 1,
-#                 "title": "delectus aut autem",
-#                 "completed": false
-#               }
-#         - expectation_type: expect_status_code_equals
-#           kwargs:
-#             code: 200
-#         - expectation_type: expect_body_contains
-#           kwargs:
-#             value: | 
-#               "title": "delectus aut autem",
-#               "completed": false
-#         - expectation_type: expect_header_equals
-#           kwargs:
-#             header: Content-Type
-#             value: application/json; charset=utf-8
-#         - expectation_type: expect_header_contains
-#           kwargs:
-#             header: Cache-Control
-#             value: max-age
+- suite_name: static_body_check
+  requests:
+    - name: todo_1_fixed_body
+      request:
+        method: GET
+        url: https://jsonplaceholder.typicode.com/todos/1
+      expect:
+        - expectation_type: expect_body_equals
+          kwargs:
+            value: |
+              {
+                "userId": 1,
+                "id": 1,
+                "title": "delectus aut autem",
+                "completed": false
+              }
+        - expectation_type: expect_status_code_equals
+          kwargs:
+            code: 200
+        - expectation_type: expect_body_contains
+          kwargs:
+            value: | 
+              "title": "delectus aut autem",
+              "completed": false
+        - expectation_type: expect_header_equals
+          kwargs:
+            header: Content-Type
+            value: application/json; charset=utf-8
+        - expectation_type: expect_header_contains
+          kwargs:
+            header: Cache-Control
+            value: max-age
 
 # - suite_name: cookies-via-httpbin
 #   requests:

@@ -6,9 +6,10 @@ type TestSuite struct {
 }
 
 type TestRequest struct {
-	Name   string        `yaml:"name"`
-	Req    HTTPRequest   `yaml:"request"`
-	Expect []Expectation `yaml:"expect"`
+	Name       string        `yaml:"name"`
+	Req        HTTPRequest   `yaml:"request"`
+	Expect     []Expectation `yaml:"expect"`
+	DependsOn  []string      `yaml:"depends_on,omitempty"`
 }
 
 type HTTPRequest struct {

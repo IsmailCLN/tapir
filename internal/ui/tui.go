@@ -20,6 +20,10 @@ import (
 	ltable "github.com/charmbracelet/lipgloss/table"
 )
 
+type resultMsg struct{ r runner.Result }
+type doneMsg struct{}
+type startStreamMsg struct{ ch <-chan runner.Result }
+
 type resultView struct {
 	rows       [][]string
 	results    []runner.Result
@@ -27,6 +31,8 @@ type resultView struct {
 	suitePaths []string
 	isRunning  bool
 	lastRerun  time.Time
+
+	resultsCh <-chan runner.Result
 }
 
 type rerunDoneMsg struct {
@@ -34,11 +40,68 @@ type rerunDoneMsg struct {
 	err     error
 }
 
-func (rv resultView) Init() tea.Cmd { return nil }
+func (rv resultView) Init() tea.Cmd {
+	// If we already have a channel to listen to, start listening.
+	if rv.resultsCh != nil {
+		return listenResults(rv.resultsCh)
+	}
+	// If marked running without channel, kick off an initial run.
+	if rv.isRunning && len(rv.suitePaths) > 0 {
+		return startRunCmd(rv.suitePaths)
+	}
+	return nil
+}
+
+func listenResults(ch <-chan runner.Result) tea.Cmd {
+	return func() tea.Msg {
+		r, ok := <-ch
+		if !ok {
+			return doneMsg{}
+		}
+		return resultMsg{r: r}
+	}
+}
+
+func startRunCmd(paths []string) tea.Cmd {
+	return func() tea.Msg {
+		var allSuites []domain.TestSuite
+		for _, p := range paths {
+			s, err := parser.LoadTestSuite(p)
+			if err != nil {
+				return rerunDoneMsg{err: fmt.Errorf("reload error: %w", err)}
+			}
+			allSuites = append(allSuites, s...)
+		}
+		ch := runner.RunConcurrent(context.Background(), allSuites, runner.Options{})
+		return startStreamMsg{ch: ch}
+	}
+}
 
 func (rv resultView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m := msg.(type) {
+	case startStreamMsg:
+		// Channel ready, start listening.
+		rv.resultsCh = m.ch
+		rv.rows = nil
+		rv.results = nil
+		rv.message = checkIOErr("Running…", nil)
+		rv.isRunning = true
+		return rv, listenResults(rv.resultsCh)
+
+	case resultMsg:
+		// One result arrived; append row and keep listening.
+		rv.results = append(rv.results, m.r)
+		rv.rows = append(rv.rows, buildRow(m.r))
+		return rv, listenResults(rv.resultsCh)
+
+	case doneMsg:
+		rv.isRunning = false
+		rv.lastRerun = time.Now()
+		rv.message = checkIOErr("Completed at "+rv.lastRerun.Format("15:04:05"), nil)
+		return rv, nil
+
 	case rerunDoneMsg:
+		// Fallback: non-stream runs (kept for compatibility)
 		rv.isRunning = false
 		rv.lastRerun = time.Now()
 
@@ -97,22 +160,7 @@ func handleRerun(rv resultView) (tea.Model, tea.Cmd) {
 
 	rv.isRunning = true
 	rv.message = checkIOErr("Re-running…", nil)
-	return rv, rerunCmd(rv.suitePaths)
-}
-
-func rerunCmd(paths []string) tea.Cmd {
-	return func() tea.Msg {
-		var allSuites []domain.TestSuite
-		for _, p := range paths {
-			s, err := parser.LoadTestSuite(p)
-			if err != nil {
-				return rerunDoneMsg{err: fmt.Errorf("reload error: %w", err)}
-			}
-			allSuites = append(allSuites, s...)
-		}
-		res, err := runner.Run(context.Background(), allSuites)
-		return rerunDoneMsg{results: res, err: err}
-	}
+	return rv, startRunCmd(rv.suitePaths)
 }
 
 func (rv resultView) View() string {
@@ -154,26 +202,30 @@ func styleCell(row, col int) lgl.Style {
 	return s
 }
 
+func buildRow(r runner.Result) []string {
+	icon := green("✓")
+	if !r.Passed {
+		icon = red("✗")
+	}
+
+	errMsg := ""
+	if r.Err != nil {
+		errMsg = helpers.Sanitize(r.Err.Error())
+	}
+
+	return []string{
+		icon,
+		r.Suite,
+		r.Request,
+		r.TestName,
+		errMsg,
+	}
+}
+
 func buildRows(results []runner.Result) [][]string {
 	rows := make([][]string, len(results))
 	for i, r := range results {
-		icon := green("✓")
-		if !r.Passed {
-			icon = red("✗")
-		}
-
-		errMsg := ""
-		if r.Err != nil {
-			errMsg = helpers.Sanitize(r.Err.Error())
-		}
-
-		rows[i] = []string{
-			icon,
-			r.Suite,
-			r.Request,
-			r.TestName,
-			errMsg,
-		}
+		rows[i] = buildRow(r)
 	}
 	return rows
 }
@@ -183,6 +235,19 @@ func Render(paths []string, results []runner.Result) error {
 		rows:       buildRows(results),
 		results:    results,
 		suitePaths: paths,
+	}
+	p := tea.NewProgram(rv)
+	_, err := p.Run()
+	return err
+}
+
+func RenderStream(paths []string) error {
+	rv := resultView{
+		rows:       nil,
+		results:    nil,
+		suitePaths: paths,
+		isRunning:  true,
+		message:    checkIOErr("Running…", nil),
 	}
 	p := tea.NewProgram(rv)
 	_, err := p.Run()

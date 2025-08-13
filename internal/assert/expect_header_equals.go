@@ -6,12 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	keyInjectedHeaders = "headers"
-	keyHeaderName      = "header"
-	keyExpectedValue   = "value"
-)
-
 // expect_header_equals: checks if a response header equals the expected value.
 // Kwargs:
 //

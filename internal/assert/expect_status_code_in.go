@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"slices"
 	"fmt"
 
 	"github.com/IsmailCLN/tapir/internal/helpers"
@@ -21,11 +22,9 @@ func expectStatusCodeIn(_ []byte, kw map[string]any) error {
 		return fmt.Errorf("expect_status_code_in: %q must be a non-empty list of integers", keyCodes)
 	}
 
-	for _, c := range allowed {
-		if code == c {
+	if slices.Contains(allowed, code) {
 			return nil
 		}
-	}
 	return fmt.Errorf("status code %d is not in allowed set %v", code, allowed)
 }
 

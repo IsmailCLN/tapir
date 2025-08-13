@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	cfgFile string
 	rootCmd = &cobra.Command{
 		Use:   "tapir",
 		Short: "HTTP-test runner inspired by Great Expectations",
@@ -24,6 +23,4 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "file", "f",
-		"test.yaml", "YAML file containing suites")
 }

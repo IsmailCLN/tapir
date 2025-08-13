@@ -6,12 +6,6 @@ import (
 	"github.com/IsmailCLN/tapir/internal/helpers"
 )
 
-const (
-	keyStatus = "status_code" // injected by runner
-	keyMin    = "min"         // YAML
-	keyMax    = "max"         // YAML
-)
-
 func ExpectStatusCodeBetween(_ []byte, kw map[string]any) error {
 	code, ok := helpers.GetInt(kw, keyStatus)
 	if !ok {

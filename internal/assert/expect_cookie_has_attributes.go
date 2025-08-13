@@ -30,8 +30,8 @@ func expectCookieHasAttributes(_ []byte, kwargs map[string]any) error {
 
 	// min_max_age: distinguish "absent" vs "present but invalid"
 	var (
-		minMaxAge     int
-		hasMinMaxAge  bool
+		minMaxAge    int
+		hasMinMaxAge bool
 	)
 	if _, present := kwargs["min_max_age"]; present {
 		v, err := helpers.AsInt(kwargs["min_max_age"])
@@ -108,54 +108,4 @@ func expectCookieHasAttributes(_ []byte, kwargs map[string]any) error {
 	}
 
 	return fmt.Errorf("cookie %q not found", name)
-}
-
-func getCookieNameCompat(kwargs map[string]any) (string, error) {
-	if s, ok := helpers.GetString(kwargs, "cookieName"); ok && strings.TrimSpace(s) != "" {
-		return s, nil
-	}
-	if s, ok := helpers.GetString(kwargs, "name"); ok && strings.TrimSpace(s) != "" {
-		return s, nil
-	}
-	return "", fmt.Errorf("expect_cookie_has_attributes: missing or empty %q", "cookieName")
-}
-
-func isCookieExpired(c *http.Cookie, now time.Time) bool {
-	if c.MaxAge < 0 {
-		return true
-	}
-	if !c.Expires.IsZero() && !c.Expires.After(now) {
-		return true
-	}
-	return false
-}
-
-func parseSameSite(s string) (http.SameSite, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "default", "defaultmode":
-		return http.SameSiteDefaultMode, nil
-	case "lax", "laxmode":
-		return http.SameSiteLaxMode, nil
-	case "strict", "strictmode":
-		return http.SameSiteStrictMode, nil
-	case "none", "nonemode":
-		return http.SameSiteNoneMode, nil
-	default:
-		return 0, fmt.Errorf("invalid samesite value %q (use one of: default|lax|strict|none)", s)
-	}
-}
-
-func sameSiteString(ss http.SameSite) string {
-	switch ss {
-	case http.SameSiteDefaultMode:
-		return "Default"
-	case http.SameSiteLaxMode:
-		return "Lax"
-	case http.SameSiteStrictMode:
-		return "Strict"
-	case http.SameSiteNoneMode:
-		return "None"
-	default:
-		return fmt.Sprintf("SameSite(%d)", int(ss))
-	}
 }

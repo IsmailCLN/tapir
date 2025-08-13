@@ -1,22 +1,24 @@
-# - suite_name: finance
-#   requests:
-#     - name: btcusdt_price
-#       request:
-#         method: GET
-#         url: https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
-#       expect:
-#         - expectation_type: expect_number_to_be_between
-#           kwargs: { column: price, min: 100, max: 20000 }        
-#         - expectation_type: expect_number_to_be_between
-#           kwargs: { column: price, min: 100 }
-#         - expectation_type: expect_status_code_between
-#           kwargs:
-#             min: 300
-#             max: 499        
-#         - expectation_type: expect_status_code_equals
-#           kwargs:
-#             code: 200
-
+- suite_name: finance
+  requests:
+    - name: btcusdt_price
+      request:
+        method: GET
+        url: https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
+      expect:
+        - expectation_type: expect_number_to_be_between
+          kwargs: { column: price, min: 100, max: 20000 }        
+        - expectation_type: expect_number_to_be_between
+          kwargs: { column: price, min: 100 }
+        - expectation_type: expect_status_code_between
+          kwargs:
+            min: 300
+            max: 499        
+        - expectation_type: expect_status_code_equals
+          kwargs:
+            code: 200
+        - expectation_type: expect_status_code_in
+          kwargs:
+            codes: [200, 201, 204]
 # - suite_name: auth_flow
 #   requests:
 #   - name: login
@@ -38,7 +40,6 @@
 #       - expectation_type: expect_status_code_equals
 #         kwargs:
 #           code: 200
-
 #   - name: get_profile
 #     request:
 #       method: GET
@@ -117,62 +118,60 @@
 #         - expectation_type: expect_cookie_not_exists
 #           kwargs: { cookieName: "SESSIONID" }
 
-- suite_name: cookie-attrs-maxage
-  requests:
-    - name: set-cookie-maxage
-      request:
-        method: GET
-        url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dabc123%3B%20Path%3D%2F%3B%20HttpOnly%3B%20Secure%3B%20Max-Age%3D600%3B%20SameSite%3DLax"
-      expect:
-        - expectation_type: expect_status_code_equals
-          kwargs: { code: 200 }
-        - expectation_type: expect_cookie_exists
-          kwargs:
-            cookieName: "SESSIONID"
-        - expectation_type: expect_cookie_has_attributes
-          kwargs:
-            cookieName: "SESSIONID"
-            path: "/"
-            http_only: true
-            secure: true
-            samesite: "lax"     
-            min_max_age: 300
-            not_expired: true
-
-    - name: set-cookie-expires
-      request:
-        method: GET
-        url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dexp999%3B%20Path%3D%2F%3B%20Domain%3Dexample.com%3B%20Expires%3DWed%2C%2011%20Aug%202027%2012%3A00%3A00%20GMT%3B%20SameSite%3DStrict"
-      expect:
-        - expectation_type: expect_status_code_equals
-          kwargs: { code: 200 }
-        - expectation_type: expect_cookie_exists
-          kwargs:
-            cookieName: "SESSIONID"
-        - expectation_type: expect_cookie_has_attributes
-          kwargs:
-            cookieName: "SESSIONID"
-            domain: "example.com"
-            path: "/"
-            samesite: "strict"
-            min_max_age: 60
-            not_expired: true
-
-    - name: delete-cookie
-      request:
-        method: GET
-        url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dgone%3B%20Path%3D%2F%3B%20Max-Age%3D0"
-      expect:
-        - expectation_type: expect_status_code_equals
-          kwargs: { code: 200 }
-        - expectation_type: expect_cookie_exists
-          kwargs:
-            cookieName: "SESSIONID"
-        - expectation_type: expect_cookie_has_attributes
-          kwargs:
-            cookieName: "SESSIONID"
-            not_expired: false 
-        - expectation_type: expect_content_type_matches
-          kwargs:
-            value: application/json
-            ignore_params: true
+# - suite_name: cookie-attrs-maxage
+#   requests:
+#     - name: set-cookie-maxage
+#       request:
+#         method: GET
+#         url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dabc123%3B%20Path%3D%2F%3B%20HttpOnly%3B%20Secure%3B%20Max-Age%3D600%3B%20SameSite%3DLax"
+#       expect:
+#         - expectation_type: expect_status_code_equals
+#           kwargs: { code: 200 }
+#         - expectation_type: expect_cookie_exists
+#           kwargs:
+#             cookieName: "SESSIONID"
+#         - expectation_type: expect_cookie_has_attributes
+#           kwargs:
+#             cookieName: "SESSIONID"
+#             path: "/"
+#             http_only: true
+#             secure: true
+#             samesite: "lax"     
+#             min_max_age: 300
+#             not_expired: true
+#     - name: set-cookie-expires
+#       request:
+#         method: GET
+#         url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dexp999%3B%20Path%3D%2F%3B%20Domain%3Dexample.com%3B%20Expires%3DWed%2C%2011%20Aug%202027%2012%3A00%3A00%20GMT%3B%20SameSite%3DStrict"
+#       expect:
+#         - expectation_type: expect_status_code_equals
+#           kwargs: { code: 200 }
+#         - expectation_type: expect_cookie_exists
+#           kwargs:
+#             cookieName: "SESSIONID"
+#         - expectation_type: expect_cookie_has_attributes
+#           kwargs:
+#             cookieName: "SESSIONID"
+#             domain: "example.com"
+#             path: "/"
+#             samesite: "strict"
+#             min_max_age: 60
+#             not_expired: true
+#     - name: delete-cookie
+#       request:
+#         method: GET
+#         url: "https://httpbin.org/response-headers?Set-Cookie=SESSIONID%3Dgone%3B%20Path%3D%2F%3B%20Max-Age%3D0"
+#       expect:
+#         - expectation_type: expect_status_code_equals
+#           kwargs: { code: 200 }
+#         - expectation_type: expect_cookie_exists
+#           kwargs:
+#             cookieName: "SESSIONID"
+#         - expectation_type: expect_cookie_has_attributes
+#           kwargs:
+#             cookieName: "SESSIONID"
+#             not_expired: false 
+#         - expectation_type: expect_content_type_matches
+#           kwargs:
+#             value: application/json
+#             ignore_params: true

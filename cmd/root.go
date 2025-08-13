@@ -25,7 +25,9 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(initCmd)
 
-	initCmd.Flags().StringVarP(&initOut, "out", "o", "test-data/sample.yaml", "Output YAML path")
+	runCmd.Flags().StringVarP(&file, "file", "f", "", "Path to a YAML test-suite")
+
+	initCmd.Flags().StringVarP(&initOut, "out", "o", "test-suites/sample.yaml", "Output YAML path")
 	initCmd.Flags().StringVarP(&initSuite, "name", "n", "sample", "Suite name")
 	initCmd.Flags().BoolVarP(&initForce, "force", "f", false, "Overwrite if file exists")
 }

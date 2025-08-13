@@ -12,11 +12,6 @@ import (
 
 var file string
 
-func init() {
-	runCmd.Flags().StringVarP(&file, "file", "f", "",
-		"Path to a YAML test-suite")
-}
-
 var runCmd = &cobra.Command{
 	Use:   "run [suite.yaml]",
 	Short: "Run a test suite",

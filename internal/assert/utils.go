@@ -92,3 +92,9 @@ func coerceHeaders(v any) (http.Header, error) {
 		return nil, fmt.Errorf("unsupported headers type: %T", v)
 	}
 }
+
+func equalHost(a, b string) bool {
+	a = strings.TrimSuffix(strings.ToLower(a), ".")
+	b = strings.TrimSuffix(strings.ToLower(b), ".")
+	return a == b
+}

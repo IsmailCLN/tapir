@@ -19,7 +19,7 @@ var (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Create a starter test suite YAML",
-	Long:  "Generates a minimal YAML test suite under test-data/ (or a custom path).",
+	Long:  "Generates a minimal YAML test suite under test-suites/ (or a custom path).",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := filepath.Clean(initOut)
 		if st, err := os.Stat(out); err == nil && st.Mode().IsRegular() && !initForce {
